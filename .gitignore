@@ -1,0 +1,14 @@
+.vscode
+
+.ipynb_checkpoints/
+__pycache__/
+
+models/
+logs/
+cached*
+pytorch_model.bin
+
+data/
+!data/README.md
+!data/carteggio_svevo.csv
+!data/classificazione_epistolario.tsv

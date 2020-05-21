@@ -1,0 +1,6 @@
+contextualized_topic_models
+sentence_transformers
+prettytable
+spacy
+pandas
+tqdm
