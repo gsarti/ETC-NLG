@@ -1,10 +1,14 @@
 .vscode
 
 .ipynb_checkpoints/
-__pycache__/
+*__pycache__/
+*runs/
+*wandb/
 
+tests/
 models/
 logs/
+venv/
 cached*
 pytorch_model.bin
 
