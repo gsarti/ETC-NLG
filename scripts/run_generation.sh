@@ -12,7 +12,7 @@ mkdir -p $TESTS
 ############
 
 PROMPT="Se io potessi"
-LENGTH=100
+LENGTH=30
 MODEL_NAME="${TRAINED_MODELS}/geppetto_svevo_blockSize=200"
 # MODEL_NAME="LorenzoDeMattei/GePpeTto" 
 
@@ -20,7 +20,7 @@ MODEL_NAME="${TRAINED_MODELS}/geppetto_svevo_blockSize=200"
 # generate #
 ############
 
-python copyrighted_code/run_generation.py \
+python transformers/run_generation.py \
     --model_type=gpt2 \
     --model_name_or_path=$MODEL_NAME \
     --prompt="${PROMPT}" \

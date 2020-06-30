@@ -1,25 +1,25 @@
 #!/bin/bash
 
-source ../venv/bin/activate
-DATE=$(date +%Y-%m-%d)
-TIME=$(date +%H:%M:%S)
-TESTS="../tests"
-OUT_DIR="${TESTS}/${DATE}/geppetto_svevo_blockSize=${BLOCK_SIZE}"
-mkdir -p $TESTS
-
 ############
 # settings #
 ############
 
 export TRAIN_FILE="../data/letters_train.txt"
 export TEST_FILE="../data/letters_test.txt"
-BLOCK_SIZE=100
+BLOCK_SIZE=200
 
 #########
 # train #
 #########
 
-python3 copyrighted_code/run_language_modeling.py \
+source ../venv/bin/activate
+DATE=$(date +%Y-%m-%d)
+TIME=$(date +%H:%M:%S)
+TESTS="../tests"
+mkdir -p $TESTS
+OUT_DIR="${TESTS}/${DATE}/geppetto_svevo_blockSize=${BLOCK_SIZE}"
+
+python3 transformers/run_language_modeling.py \
     --output_dir=$OUT_DIR \
     --cache_dir="${TESTS}/cache"\
     --model_type=gpt2 \

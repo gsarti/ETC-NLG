@@ -5,6 +5,7 @@
 *runs/
 *wandb/
 
+*screenlog.0
 tests/
 models/
 logs/
