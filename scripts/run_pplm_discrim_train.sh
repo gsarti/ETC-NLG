@@ -21,7 +21,7 @@ MODEL_NAME="${TRAINED_MODELS}/geppetto_svevo_blockSize=100"
 #################	
 
 # transformers is bugged, this script only runs on GPU.
-python transformers/run_pplm_discrim_train.py --batch_size=32 \
+python3 transformers/run_pplm_discrim_train.py --batch_size=32 \
 	--save_model --dataset="generic" --dataset_fp=$TRAIN_FILE \
 	--pretrained_model=$MODEL_NAME \
 	# --no_cuda \

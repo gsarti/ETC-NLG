@@ -12,8 +12,8 @@ mkdir -p $TESTS
 ############
 
 PROMPT="Se io potessi"
-LENGTH=30
-MODEL_NAME="${TRAINED_MODELS}/geppetto_svevo_blockSize=200"
+LENGTH=50
+MODEL_NAME="${TRAINED_MODELS}/geppetto_svevo_blockSize=100"
 # MODEL_NAME="LorenzoDeMattei/GePpeTto" 
 
 ############

@@ -245,9 +245,7 @@ def perturb_past(
     return pert_past, new_accumulated_hidden, grad_norms, loss_per_iter
 
 
-def get_classifier(
-    name: Optional[str], class_label: Union[str, int], device: str
-) -> Tuple[Optional[ClassificationHead], Optional[int]]:
+def get_classifier(name: Optional[str], class_label: Union[str, int], device: str) -> Tuple[Optional[ClassificationHead], Optional[int]]:
     if name is None:
         return None, None
 
