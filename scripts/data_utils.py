@@ -14,20 +14,11 @@ TESTS = "../tests/"+str(time.strftime('%Y-%m-%d'))+"/"
 TRAINED_MODELS=DATA+"trained_models/"
 
 
-def _build_labeled_df(df):
+def _build_labeled_df(df, limit):
 
     classes = ['FAMIGLIA', 'FAMIGLIA_AMORE_PER_LIVIA', 'FAMIGLIA, GELOSIA_PER_LIVIA', 
                'FAM_SOLDI', 'VIAGGI', 'SALUTE', 'SALUTE_FUMO', 'LETTERATURA', 'LAVORO',
                'LETT_SCRITTURA']
-
-    # labeled_text = []
-    # for idx, row in df.iterrows():
-
-        # label = "$".join([str(class_idx) 
-        #                 for class_idx, class_name in enumerate(classes)
-        #                 if row[class_name]==1])
-        # label = np.nan if label=="" else label
-        # labeled_text.append({"label":label, "text":row["TESTO"]})
 
     labeled_text = [{"label":class_idx, "text":row["TESTO"]} 
                      for idx, row in df.iterrows()
@@ -35,17 +26,25 @@ def _build_labeled_df(df):
                      if row[class_name]==1]
 
     labeled_df = pd.DataFrame(labeled_text)
-    # labeled_df = labeled_df[labeled_df['label'].notna()]
 
-    print(labeled_df.head())
-    return labeled_df
+    splitted_sentences = [{"label":row["label"], "text": cut_sentence}
+                            for idx, row in labeled_df.iterrows()
+                            if len(row["text"]) > limit
+                            for cut_sentence in split_string(row["text"], limit=limit)]
+
+    splitted_df = pd.DataFrame(splitted_sentences)
+    # splitted_df = splitted_df[splitted_df['label'].notna()]
+
+    print(splitted_df.head())
+    return splitted_df
 
 
-def _save_df(df, csv, txt, tsv, filename):
+def _save_df(df, csv, txt, filename):
 
     if csv:
 
-        df.to_csv(DATA+filename+".csv", encoding='utf-8', index=False, header=False, sep='"', mode='a')
+        df.to_csv(DATA+filename+".csv", encoding='utf-8', 
+                  header=False, index=False, sep='\t')
     
     if txt:
 
@@ -54,18 +53,8 @@ def _save_df(df, csv, txt, tsv, filename):
             f.write(sentence+str("\n\n"))
         f.close()
 
-    if tsv:
 
-        with open(DATA+filename+".csv",'r') as csvin:
-            with open(DATA+filename+".tsv", 'w') as tsvout:
-                csvin = csv_lib.reader(csvin)
-                tsvout = csv_lib.writer(tsvout, delimiter='\t')
-
-                for row in csvin:
-                    tsvout.writerow(row) 
-
-
-def preprocess_labeled_data(csv=True, txt=True, tsv=True):
+def preprocess_labeled_data(csv=True, txt=False, limit=100):
     random.seed(0)
 
     df = pandas.read_excel(DATA+"classificazione_lettere.xlsx")
@@ -78,15 +67,31 @@ def preprocess_labeled_data(csv=True, txt=True, tsv=True):
             'LETT_SCRITTURA', 'PAROLE_FAMIGLIA', 'PAROLE_VIAGGI', 'PAROLE_SALUTE',
             'PAROLE_LETTERATURA', 'PAROLE_LAVORO']
 
-    labeled_df = _build_labeled_df(df)
+    labeled_df = _build_labeled_df(df, limit)
 
     # train test split
     msk = np.random.rand(len(labeled_df)) < 0.8
     train = labeled_df[msk]
     test = labeled_df[~msk]
 
-    _save_df(train, csv, txt, tsv, filename="letters_train")
-    _save_df(test, csv, txt, tsv, filename="letters_test")
-             
+    _save_df(train, csv, txt, filename="letters_train")
+    _save_df(test, csv, txt, filename="letters_test")
 
-preprocess_labeled_data()
+
+def split_string(str, limit, sep=" "):
+    words = str.split()
+    if max(map(len, words)) > limit:
+        raise ValueError("limit is too small")
+    res, part, others = [], words[0], words[1:]
+    for word in others:
+        if len(sep)+len(word) > limit-len(part):
+            res.append(part)
+            part = word
+        else:
+            part += sep+word
+    if part:
+        res.append(part)
+    return res
+
+
+preprocess_labeled_data(csv=True, limit=300)

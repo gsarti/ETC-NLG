@@ -13,19 +13,17 @@ mkdir -p $TESTS
 # settings #
 ############
 
-export TRAIN_FILE="../data/letters_train.tsv"
-
+export TRAIN_FILE="../data/letters_train.csv"
 MODEL_NAME="${TRAINED_MODELS}/geppetto_svevo_blockSize=200"
-
 # PROMPT=""
 
 #################
 # train discrim #
 #################	
 
-python transformers/run_pplm_discrim_train.py --batch_size=128 \
-	--save_model --dataset_fp=$TRAIN_FILE \
-	--no_cuda 
+python transformers/run_pplm_discrim_train.py --batch_size=64 \
+	--save_model --dataset="generic" --dataset_fp=$TRAIN_FILE \
+	--no_cuda \
 	# --pretrained_model=$MODEL_NAME \
 
 # python transformers/run_pplm.py -B 1 --cond_text PROMPT \

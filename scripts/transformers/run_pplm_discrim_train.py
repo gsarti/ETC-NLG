@@ -38,7 +38,7 @@ torch.manual_seed(0)
 np.random.seed(0)
 EPSILON = 1e-10
 example_sentence = "This is incredible! I love it, this is the best chicken I have ever had."
-max_length_seq = 100
+max_length_seq = 500
 TESTS = "../tests/"+str(time.strftime('%Y-%m-%d'))+"/"
 
 class Discriminator(torch.nn.Module):
@@ -297,11 +297,14 @@ def train_discriminator(
 
                     if len(seq) < max_length_seq:
                         seq = torch.tensor([50256] + seq, device=device, dtype=torch.long)
+    
                     else:
                         print("Line {} is longer than maximum length {}".format(i, max_length_seq))
                         continue
+
                     x.append(seq)
                     y.append(d["label"])
+
                 except Exception:
                     print("Error evaluating / tokenizing" " line {}, skipping it".format(i))
                     pass
@@ -359,7 +362,7 @@ def train_discriminator(
             "default_class": 0,
         }
 
-    else:  # if dataset == "generic":
+    elif dataset == "generic":
         # This assumes the input dataset is a TSV with the following structure:
         # class \t text
 
@@ -372,6 +375,12 @@ def train_discriminator(
             for row in tqdm(csv_reader, ascii=True):
                 if row:
                     classes.add(row[0])
+
+        # df = pandas.read_csv(dataset_fp)
+
+        # for row in df.iterrows():
+        #                     classes.add(row[0])
+
 
         idx2class = sorted(classes)
         class2idx = {c: i for i, c in enumerate(idx2class)}
