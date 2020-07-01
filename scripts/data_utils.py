@@ -44,9 +44,9 @@ def _build_labeled_df(df, max_sentence_length):
     labeled_df = pd.DataFrame(labeled_text)
 
     cut_sentences = [{"label":row["label"], "text": cut_sentence}
-                            for idx, row in labeled_df.iterrows()
-                            for cut_sentence in _split_string(row["text"], 
-                                          limit=max_sentence_length)]
+                        for idx, row in labeled_df.iterrows()
+                        for cut_sentence in _split_string(row["text"], 
+                        limit=max_sentence_length)]
 
     cut_df = pd.DataFrame(cut_sentences)
     # cut_df = cut_df[splitted_df['label'].notna()]
