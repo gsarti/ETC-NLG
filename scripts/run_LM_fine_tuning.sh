@@ -6,7 +6,7 @@
 
 export TRAIN_FILE="../data/letters_train.txt"
 export TEST_FILE="../data/letters_test.txt"
-BLOCK_SIZE=200
+BLOCK_SIZE=100
 
 #########
 # train #

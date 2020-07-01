@@ -33,12 +33,13 @@ from tqdm import tqdm, trange
 
 from pplm_classification_head import ClassificationHead
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from transformers import AutoTokenizer, AutoModelWithLMHead, pipeline, GPT2Tokenizer
 
 torch.manual_seed(0)
 np.random.seed(0)
 EPSILON = 1e-10
-example_sentence = "This is incredible! I love it, this is the best chicken I have ever had."
-max_length_seq = 500
+example_sentence = "Tanto puro che talvolta dubito veramente che si tratti d'amore perché io altrimenti non potrei consegnarti neppure questa carta."
+max_length_seq = 100
 TESTS = "../tests/"+str(time.strftime('%Y-%m-%d'))+"/"
 
 class Discriminator(torch.nn.Module):
@@ -46,8 +47,10 @@ class Discriminator(torch.nn.Module):
 
     def __init__(self, class_size, pretrained_model="gpt2-medium", cached_mode=False, device="cpu"):
         super().__init__()
-        self.tokenizer = GPT2Tokenizer.from_pretrained(pretrained_model)
-        self.encoder = GPT2LMHeadModel.from_pretrained(pretrained_model)
+        # self.tokenizer = GPT2Tokenizer.from_pretrained(pretrained_model)
+        # self.encoder = GPT2LMHeadModel.from_pretrained(pretrained_model)
+        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
+        self.encoder = AutoModelWithLMHead.from_pretrained(pretrained_model)
         self.embed_size = self.encoder.transformer.config.hidden_size
         self.classifier_head = ClassificationHead(class_size=class_size, embed_size=self.embed_size)
         self.cached_mode = cached_mode
@@ -63,6 +66,8 @@ class Discriminator(torch.nn.Module):
 
     def avg_representation(self, x):
         mask = x.ne(0).unsqueeze(2).repeat(1, 1, self.embed_size).float().to(self.device).detach()
+        # print(x.shape, self.embed_size, mask.shape)
+        # print(vars(self.encoder.transformer.config))
         hidden, _ = self.encoder.transformer(x)
         masked_hidden = hidden * mask
         avg_hidden = torch.sum(masked_hidden, dim=1) / (torch.sum(mask, dim=1).detach() + EPSILON)
@@ -376,18 +381,12 @@ def train_discriminator(
                 if row:
                     classes.add(row[0])
 
-        # df = pandas.read_csv(dataset_fp)
-
-        # for row in df.iterrows():
-        #                     classes.add(row[0])
-
-
         idx2class = sorted(classes)
         class2idx = {c: i for i, c in enumerate(idx2class)}
 
         discriminator = Discriminator(
-            class_size=len(idx2class), pretrained_model=pretrained_model, cached_mode=cached, device=device
-        ).to(device)
+            class_size=len(idx2class), pretrained_model=pretrained_model, cached_mode=cached,
+                   device=device).to(device)
 
         x = []
         y = []
@@ -398,8 +397,12 @@ def train_discriminator(
                     label = row[0]
                     text = row[1]
 
+                    seq = discriminator.tokenizer.encode(text)
+                    # print(vars(discriminator.tokenizer).keys())
+                    # encoder_len = len(discriminator.tokenizer.encoder)
                     try:
                         seq = discriminator.tokenizer.encode(text)
+     
                         if len(seq) < max_length_seq:
                             seq = torch.tensor([50256] + seq, device=device, dtype=torch.long)
 
@@ -482,7 +485,7 @@ def train_discriminator(
             #               ))
             torch.save(
                 discriminator.get_classifier().state_dict(),
-                "{}_classifier_head_epoch_{}.pt".format(dataset, epoch + 1),
+                TESTS+"{}_classifier_head_epoch_{}.pt".format(dataset, epoch + 1),
             )
 
 
