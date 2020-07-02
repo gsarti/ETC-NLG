@@ -39,7 +39,7 @@ torch.manual_seed(0)
 np.random.seed(0)
 EPSILON = 1e-10
 example_sentence = "Tanto puro che talvolta dubito veramente che si tratti d'amore perché io altrimenti non potrei consegnarti neppure questa carta."
-max_length_seq = 100
+max_length_seq = 1000
 TESTS = "../tests/"+str(time.strftime('%Y-%m-%d'))+"/"
 
 class Discriminator(torch.nn.Module):
@@ -400,16 +400,16 @@ def train_discriminator(
                     seq = discriminator.tokenizer.encode(text)
                     # print(vars(discriminator.tokenizer).keys())
                     # encoder_len = len(discriminator.tokenizer.encoder)
+               
                     try:
                         seq = discriminator.tokenizer.encode(text)
      
                         if len(seq) < max_length_seq:
-                            seq = torch.tensor([50256] + seq, device=device, dtype=torch.long)
+                            seq = torch.tensor([max_length_seq] + seq, device=device, dtype=torch.long)
 
                         else:
                             print("Line {} is longer than maximum length {}".format(i, max_length_seq))
                             continue
-
                         x.append(seq)
                         y.append(class2idx[label])
 
@@ -479,13 +479,13 @@ def train_discriminator(
         predict(example_sentence, discriminator, idx2class, cached=cached, device=device)
 
         if save_model:
-            # torch.save(discriminator.state_dict(),
-            #           "{}_discriminator_{}.pt".format(
-            #               args.dataset, epoch + 1
-            #               ))
+            # torch.save(
+            #     discriminator.get_classifier().state_dict(),
+            #     TESTS+"{}_classifier_head_epoch_{}.pt".format(dataset, epoch + 1),
+            # )
             torch.save(
                 discriminator.get_classifier().state_dict(),
-                TESTS+"{}_classifier_head_epoch_{}.pt".format(dataset, epoch + 1),
+                TESTS+"{}_classifier_head.pt".format(dataset, epoch + 1),
             )
 
 

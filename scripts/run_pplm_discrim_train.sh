@@ -5,23 +5,22 @@ source ../venv/bin/activate
 DATE=$(date +%Y-%m-%d)
 TIME=$(date +%H:%M:%S)
 TESTS="../tests/${DATE}"
-TRAINED_MODELS="../data/trained_models"
+DATA="../data/trained_models"
 mkdir -p $TESTS
-
 
 ############
 # settings #
 ############
 
+BLOCK_SIZE=100
 export TRAIN_FILE="../data/letters_train.csv"
-MODEL_NAME="${TRAINED_MODELS}/geppetto_svevo_blockSize=100"
+MODEL_NAME="${TESTS}/geppetto_svevo_blockSize=${BLOCK_SIZE}"
 
 #################
 # train discrim #
 #################	
 
-# transformers is bugged, this script only runs on GPU.
-python3 transformers/run_pplm_discrim_train.py --batch_size=32 \
+python3 transformers/run_pplm_discrim_train.py --batch_size=128 --epochs=10\
 	--save_model --dataset="generic" --dataset_fp=$TRAIN_FILE \
 	--pretrained_model=$MODEL_NAME \
 	# --no_cuda \

@@ -15,19 +15,16 @@ BLOCK_SIZE=100
 source ../venv/bin/activate
 DATE=$(date +%Y-%m-%d)
 TIME=$(date +%H:%M:%S)
-TESTS="../tests"
+TESTS="../tests/${DATE}"
 mkdir -p $TESTS
-OUT_DIR="${TESTS}/${DATE}/geppetto_svevo_blockSize=${BLOCK_SIZE}"
+OUT_DIR="${TESTS}/geppetto_svevo_blockSize=${BLOCK_SIZE}"
 
 python3 transformers/run_language_modeling.py \
-    --output_dir=$OUT_DIR \
-    --cache_dir="${TESTS}/cache"\
-    --model_type=gpt2 \
-    --model_name_or_path="LorenzoDeMattei/GePpeTto" \
-    --do_train \
-    --train_data_file=$TRAIN_FILE \
-    --do_eval \
-    --eval_data_file=$TEST_FILE \
-    --block_size=$BLOCK_SIZE 
+    --output_dir=$OUT_DIR --cache_dir="${TESTS}/cache"\
+    --model_type=gpt2 --model_name_or_path="LorenzoDeMattei/GePpeTto" \
+    --do_train --train_data_file=$TRAIN_FILE \
+    --do_eval --eval_data_file=$TEST_FILE \
+    --block_size=$BLOCK_SIZE \
+    --overwrite_output_dir
 
 deactivate

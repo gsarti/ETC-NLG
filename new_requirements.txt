@@ -78,12 +78,12 @@ tensorboard==2.2.2
 tensorboard-plugin-wit==1.6.0.post3
 thinc==7.4.1
 threadpoolctl==2.1.0
-tokenizers==0.7.0
+tokenizers==0.8.0rc4
 torch==1.5.1
 torchtext==0.6.0
 torchvision==0.6.1
 tqdm==4.46.1
-transformers==2.11.0
+-e git+https://github.com/huggingface/transformers.git@306f1a269504b781f886d75105acabf8ae95bd11#egg=transformers
 urllib3==1.25.9
 wandb==0.9.1
 wasabi==0.7.0
