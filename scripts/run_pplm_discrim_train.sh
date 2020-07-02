@@ -14,13 +14,13 @@ mkdir -p $TESTS
 
 BLOCK_SIZE=100
 export TRAIN_FILE="../data/letters_train.csv"
-MODEL_NAME="${TESTS}/geppetto_svevo_blockSize=${BLOCK_SIZE}"
+MODEL_NAME="${TESTS}/fine_tuned_LM_blockSize=${BLOCK_SIZE}"
 
 #################
 # train discrim #
 #################	
 
-python3 transformers/run_pplm_discrim_train.py --batch_size=128 --epochs=10\
+python3 transformers/run_pplm_discrim_train.py --batch_size=64 --epochs=10\
 	--save_model --dataset="generic" --dataset_fp=$TRAIN_FILE \
 	--pretrained_model=$MODEL_NAME \
 	# --no_cuda \

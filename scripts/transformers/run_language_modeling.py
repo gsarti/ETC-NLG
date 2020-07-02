@@ -19,13 +19,14 @@ GPT and GPT-2 are fine-tuned using a causal language modeling (CLM) loss while B
 using a masked language modeling (MLM) loss.
 """
 
-EPOCHS=10
+EPOCHS=20
 
 import logging
 import math
 import os
 from dataclasses import dataclass, field
 from typing import Optional
+import time
 
 from transformers import (
     CONFIG_MAPPING,
@@ -49,6 +50,7 @@ logger = logging.getLogger(__name__)
 
 MODEL_CONFIG_CLASSES = list(MODEL_WITH_LM_HEAD_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
+TESTS = "../tests/"+str(time.strftime('%Y-%m-%d'))+"/"
 
 
 @dataclass
@@ -246,7 +248,7 @@ def main():
             else None
         )
         trainer.train(model_path=model_path)
-        trainer.save_model()
+        trainer.save_model(TESTS)
         # For convenience, we also re-save the tokenizer to the same directory,
         # so that you can share your model easily on huggingface.co/models =)
         if trainer.is_world_master():

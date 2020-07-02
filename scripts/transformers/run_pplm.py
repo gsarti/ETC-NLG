@@ -146,7 +146,7 @@ def perturb_past(
     loss_per_iter = []
     new_accumulated_hidden = None
     for i in range(num_iterations):
-        print("Iteration ", i + 1)
+        print("Iteration ", i + 1, end="\t")
         curr_perturbation = [torch.from_numpy(p_).requires_grad_(True).to(device=device) for p_ in grad_accumulator]
         # make sure p_.grad is not None
         for p_ in curr_perturbation:
@@ -170,7 +170,7 @@ def perturb_past(
                 bow_loss = -torch.log(torch.sum(bow_logits))
                 loss += bow_loss
                 loss_list.append(bow_loss)
-            print(" pplm_bow_loss:", loss.data.cpu().numpy())
+            print(" pplm_bow_loss:", loss.data.cpu().numpy(), end="\t")
 
         if loss_type == 2 or loss_type == 3:
             ce_loss = torch.nn.CrossEntropyLoss()
@@ -188,7 +188,7 @@ def perturb_past(
 
             label = torch.tensor(prediction.shape[0] * [class_label], device=device, dtype=torch.long)
             discrim_loss = ce_loss(prediction, label)
-            print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy())
+            print(" pplm_discrim_loss:", discrim_loss.data.cpu().numpy(), end="\t")
             loss += discrim_loss
             loss_list.append(discrim_loss)
 

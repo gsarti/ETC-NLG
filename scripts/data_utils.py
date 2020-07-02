@@ -96,14 +96,14 @@ def preprocess_labeled_data():
     test = labeled_df[~msk]
 
     ### txt files for LM fine tuning
-    _save_df(train, csv=False, txt=False, filename="letters_train")
-    _save_df(test, csv=False, txt=False, filename="letters_test")
+    _save_df(train, csv=False, txt=True, filename="letters_train")
+    _save_df(test, csv=False, txt=True, filename="letters_test")
 
     ### csv files for PPLM training
     cut_train = _cut_sentences(train, max_sentence_length=1000, return_all_splits=False)
     cut_test = _cut_sentences(test, max_sentence_length=1000, return_all_splits=False)
-    _save_df(cut_train, csv=True, txt=True, filename="letters_train")
-    _save_df(cut_test, csv=True, txt=True, filename="letters_test")
+    _save_df(cut_train, csv=True, txt=False, filename="letters_train")
+    _save_df(cut_test, csv=True, txt=False, filename="letters_test")
 
 
 preprocess_labeled_data()

@@ -40,7 +40,7 @@ np.random.seed(0)
 EPSILON = 1e-10
 example_sentence = "Tanto puro che talvolta dubito veramente che si tratti d'amore perché io altrimenti non potrei consegnarti neppure questa carta."
 max_length_seq = 1000
-TESTS = "../tests/"+str(time.strftime('%Y-%m-%d'))+"/"
+TESTS = "../tests/"+str(time.strftime('%Y-%m-%d'))+"/discriminator/"
 
 class Discriminator(torch.nn.Module):
     """Transformer encoder followed by a Classification Head"""
@@ -253,7 +253,7 @@ def train_discriminator(
         for i in trange(len(train_data), ascii=True):
             seq = TreebankWordDetokenizer().detokenize(vars(train_data[i])["text"])
             seq = discriminator.tokenizer.encode(seq)
-            seq = torch.tensor([50256] + seq, device=device, dtype=torch.long)
+            seq = torch.tensor([max_length_seq] + seq, device=device, dtype=torch.long)
             x.append(seq)
             y.append(class2idx[vars(train_data[i])["label"]])
         train_dataset = Dataset(x, y)
@@ -263,7 +263,7 @@ def train_discriminator(
         for i in trange(len(test_data), ascii=True):
             seq = TreebankWordDetokenizer().detokenize(vars(test_data[i])["text"])
             seq = discriminator.tokenizer.encode(seq)
-            seq = torch.tensor([50256] + seq, device=device, dtype=torch.long)
+            seq = torch.tensor([max_length_seq] + seq, device=device, dtype=torch.long)
             test_x.append(seq)
             test_y.append(class2idx[vars(test_data[i])["label"]])
         test_dataset = Dataset(test_x, test_y)
@@ -301,7 +301,7 @@ def train_discriminator(
                     seq = discriminator.tokenizer.encode(d["text"])
 
                     if len(seq) < max_length_seq:
-                        seq = torch.tensor([50256] + seq, device=device, dtype=torch.long)
+                        seq = torch.tensor([max_length_seq] + seq, device=device, dtype=torch.long)
     
                     else:
                         print("Line {} is longer than maximum length {}".format(i, max_length_seq))
@@ -344,7 +344,7 @@ def train_discriminator(
                     seq = discriminator.tokenizer.encode(d["text"])
 
                     if len(seq) < max_length_seq:
-                        seq = torch.tensor([50256] + seq, device=device, dtype=torch.long)
+                        seq = torch.tensor([max_length_seq] + seq, device=device, dtype=torch.long)
                     else:
                         print("Line {} is longer than maximum length {}".format(i, max_length_seq))
                         continue
@@ -368,7 +368,7 @@ def train_discriminator(
         }
 
     elif dataset == "generic":
-        # This assumes the input dataset is a TSV with the following structure:
+        # This assumes the input dataset is a csv with the following structure:
         # class \t text
 
         if dataset_fp is None:
@@ -498,7 +498,7 @@ if __name__ == "__main__":
         choices=("SST", "clickbait", "toxic", "generic"),
         help="dataset to train the discriminator on."
         "In case of generic, the dataset is expected"
-        "to be a TSBV file with structure: class \\t text",
+        "to be a csv file with structure: class \t text",
     )
     parser.add_argument(
         "--dataset_fp",
