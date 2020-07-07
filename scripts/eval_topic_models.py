@@ -15,7 +15,7 @@ from contextualized_topic_models.evaluation.measures import (
 )
 
 from sentence_transformers import SentenceTransformer
-from sentence_transformers.models import CamemBERT, Pooling
+from .sentence_transformers import CamemBERT, Pooling
 
 PREPROC_TEXTS = 'data/preprocessed_texts.txt'
 UNPREPROC_TEXTS = 'data/unpreprocessed_texts.txt'
