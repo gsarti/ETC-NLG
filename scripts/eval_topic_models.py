@@ -1,4 +1,5 @@
-
+import os
+import sys
 import logging
 import numpy as np
 from shutil import rmtree
@@ -14,8 +15,10 @@ from contextualized_topic_models.evaluation.measures import (
     InvertedRBO
 )
 
+sys.path.append(os.getcwd())
+
 from sentence_transformers import SentenceTransformer
-from .sentence_transformers import CamemBERT, Pooling
+from scripts.sent_transformers import CamemBERT, Pooling
 
 PREPROC_TEXTS = 'data/preprocessed_texts.txt'
 UNPREPROC_TEXTS = 'data/unpreprocessed_texts.txt'
@@ -55,13 +58,14 @@ def main():
     for inf_type in ['contextual', 'combined']:
         for n_topics in tqdm(range(3, 11)):
             ctm = CTM(
-                input_size=handler.vocab,
+                input_size=len(handler.vocab),
                 bert_input_size=UMBERTO_SIZE,
-                hidden_size=(100,),
+                hidden_sizes=(100,100,100),
                 inference_type=inf_type,
                 n_components=n_topics,
-                num_epochs=50
+                num_epochs=200
             )
+            ctm.fit(train_data)
             td = TopicDiversity(ctm.get_topic_lists(25))
             rbo = InvertedRBO(ctm.get_topic_lists(10))
             td_score = td.score(topk=25)
@@ -72,10 +76,15 @@ def main():
             npmi_score = npmi.score()
             x.add_row([inf_type, n_topics, td_score, rbo_score, npmi_score])
             if npmi_score > best_npmi:
+                logger.info(f"New best NPMI with type {inf_type}, {n_topics} topics: {npmi_score}")
                 rmtree(SAVE_PATH)
                 ctm.save(models_dir=SAVE_PATH)
-            logger.info(f'\n{x}')
+                best_type, best_topic = inf_type, n_topics
+    logger.info(f"\n{x}")
+    logger.info(f"Best model: {inf_type} with {n_topics} topics. Saved to {SAVE_PATH}.")
             
             
 if __name__ == "__main__":
+    if not os.path.exists(SAVE_PATH):
+        os.makedirs(SAVE_PATH)
     main()
