@@ -18,7 +18,7 @@ DATE=$(date +%Y-%m-%d)
 TIME=$(date +%H:%M:%S)
 DATA="../data/trained_models"
 TESTS="../tests/${SAVE_DIR}"
-SAVEDIR="${TESTS}/discriminator"
+SAVEDIR="${TESTS}/discriminator/"
 mkdir -p $SAVEDIR
 MODEL_NAME="${TESTS}/fine_tuned_LM_blockSize=${BLOCK_SIZE}"
 
