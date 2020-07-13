@@ -50,13 +50,22 @@ def _build_labeled_df(df):
                'FAM_SOLDI', 'VIAGGI', 'SALUTE', 'SALUTE_FUMO', 'LETTERATURA', 'LAVORO',
                'LETT_SCRITTURA']
 
+    new_classes = ['FAMIGLIA', 'LIVIA', 'VIAGGI', 'SALUTE', 'LETTERATURA', 'LAVORO']
+
+    # merge classes
+    df.fillna(0., inplace=True)
+    df['LIVIA'] = df['FAMIGLIA_AMORE_PER_LIVIA'] + df['FAMIGLIA_GELOSIA_PER_LIVIA']
+    df['SALUTE'] = df['SALUTE'] + df['SALUTE_FUMO']
+    df['LETTERATURA'] = df['LETTERATURA'] + df['LETT_SCRITTURA']
+
     labeled_text = [{"label":class_name, "text":row["TESTO"]} 
                      for idx, row in df.iterrows()
-                     for class_idx, class_name in enumerate(classes)
-                     if row[class_name]==1]
+                     for class_idx, class_name in enumerate(new_classes)
+                     if row[class_name]>=1]
 
     labeled_df = pd.DataFrame(labeled_text)
-    # labeled_df = labeled_df[labeled_df['label'].notna()]
+
+    print(labeled_df.groupby("label").agg(['count']))
 
     return labeled_df
 
