@@ -50,7 +50,6 @@ logger = logging.getLogger(__name__)
 
 MODEL_CONFIG_CLASSES = list(MODEL_WITH_LM_HEAD_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
-TESTS = "../tests/"+str(time.strftime('%Y-%m-%d'))+"/"
 
 
 @dataclass
@@ -248,9 +247,9 @@ def main():
             else None
         )
         trainer.train(model_path=model_path)
-        trainer.save_model(TESTS)
-        # For convenience, we also re-save the tokenizer to the same directory,
-        # so that you can share your model easily on huggingface.co/models =)
+        trainer.save_model()
+        ## For convenience, we also re-save the tokenizer to the same directory,
+        ## so that you can share your model easily on huggingface.co/models =)
         if trainer.is_world_master():
             tokenizer.save_pretrained(training_args.output_dir)
 

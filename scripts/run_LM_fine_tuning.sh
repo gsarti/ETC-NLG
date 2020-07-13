@@ -6,7 +6,8 @@
 
 export TRAIN_FILE="../data/letters_train.txt"
 export TEST_FILE="../data/letters_test.txt"
-BLOCK_SIZE=100
+BLOCK_SIZE=256
+SAVE_DIR="Svevo"
 
 #########
 # train #
@@ -15,7 +16,7 @@ BLOCK_SIZE=100
 source ../venv/bin/activate
 DATE=$(date +%Y-%m-%d)
 TIME=$(date +%H:%M:%S)
-TESTS="../tests/${DATE}"
+TESTS="../tests/${SAVE_DIR}"
 mkdir -p $TESTS
 OUT_DIR="${TESTS}/fine_tuned_LM_blockSize=${BLOCK_SIZE}"
 
