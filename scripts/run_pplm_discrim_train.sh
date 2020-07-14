@@ -5,8 +5,10 @@
 ############
 
 export TRAIN_FILE="../data/letters_train.csv"
-BLOCK_SIZE=256
-SAVE_DIR="Svevo"
+MODEL="Svevo"
+BLOCK_SIZE=128
+LM_EPOCHS=3
+DISCRIM_EPOCHS=20
 
 #################
 # train discrim #
@@ -17,14 +19,13 @@ source ../venv/bin/activate
 DATE=$(date +%Y-%m-%d)
 TIME=$(date +%H:%M:%S)
 DATA="../data/trained_models"
-TESTS="../tests/${SAVE_DIR}"
-SAVEDIR="${TESTS}/discriminator/"
+LM_NAME="../tests/${MODEL}/fine_tuned_LM_blockSize=${BLOCK_SIZE}_ep=${LM_EPOCHS}"
+SAVEDIR="${LM_NAME}/discriminator_ep=${DISCRIM_EPOCHS}/"
 mkdir -p $SAVEDIR
-MODEL_NAME="${TESTS}/fine_tuned_LM_blockSize=${BLOCK_SIZE}"
 
-python3 transformers/run_pplm_discrim_train.py --batch_size=64 --epochs=20\
+python3 transformers/run_pplm_discrim_train.py --batch_size=64 --epochs=$DISCRIM_EPOCHS\
 	--save_model --dataset="generic" --dataset_fp=$TRAIN_FILE \
-	--pretrained_model=$MODEL_NAME --log_interval=10 --savedir=$SAVEDIR\
+	--pretrained_model=$LM_NAME --log_interval=10 --savedir=$SAVEDIR\
 	# --no_cuda \
 
 deactivate
