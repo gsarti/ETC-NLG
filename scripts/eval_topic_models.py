@@ -49,14 +49,22 @@ def embeddings_from_file(args):
         return np.array(model.encode(train_text))
 
 
+class CustomCTM(CTM):
+    """ Change format of saved models to make it more sane """
+    def _format_file(self):
+        epoch = self.nn_epoch + 1
+        return f"ctm_{self.n_components}_{epoch}_{type(self.model.inf_net).__name__}"
+
+
 def main(args):
     handler = TextHandler(args.preproc_path)
     handler.prepare()
     train_embeds = embeddings_from_file(args)
     model_name = args.embed_model_name.split("/")[-1]
     data_name = args.preproc_path.split("/")[-1].split(".")[0]
-    with open(os.path.join(args.save_path, data_name, model_name), 'wb') as f:
+    with open(os.path.join(args.save_path, f"{data_name}_{model_name}"), 'wb') as f:
         pickle.dump(train_embeds, f)
+        logger.info(f"Cached embeddings to {os.path.join(args.save_path, f'{data_name}_{model_name}')}")
     train_data = CTMDataset(handler.bow, train_embeds, handler.idx2token)
     x = PrettyTable()
     x.field_names = [
@@ -64,8 +72,8 @@ def main(args):
     ]
     best_npmi = 0
     for inf_type in args.modes:
-        for n_topics in tqdm(n_topics):
-            ctm = CTM(
+        for n_topics in tqdm(args.n_topics):
+            ctm = CustomCTM(
                 input_size=len(handler.vocab),
                 bert_input_size=args.embed_model_size,
                 hidden_sizes=(args.hidden_size,args.hidden_size,args.hidden_size),
@@ -168,7 +176,8 @@ if __name__ == "__main__":
         default=["contextual", "combined"],
         help="Topic modeling mode. One or more between: %(choice)s. Default: %(default)s.",
     )
+    args = parser.parse_args()
     if not os.path.exists(args.save_path):
         os.makedirs(args.save_path)
-    args = parser.parse_args()
+    logger.info(f"Script args: f{args}")
     main(args)

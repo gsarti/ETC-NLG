@@ -18,9 +18,8 @@ from scripts.sent_transformers import CamemBERT, RoBERTa, Pooling
 
 PREPROC_TEXTS = 'data/preprocessed_texts.txt'
 UNPREPROC_TEXTS = 'data/unpreprocessed_texts.txt'
-UMBERTO_NAME = "Musixmatch/umberto-commoncrawl-cased-v1"
-UMBERTO_SIZE = 768
-SAVE_PATH = 'models'
+EMBEDS_PATH = "models/preprocessed_svevo_texts_umberto-commoncrawl-cased-v1"
+MODEL_DIR = "models/ctm_3_49_ContextualInferenceNetwork"
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s  %(message)s",
@@ -72,6 +71,47 @@ def main(args):
     training_dataset = CTMDataset(handler.bow, training_embeds, handler.idx2token)
     ctm = load_ctm(args.model_dir, args.epoch, args.inference_type)
     dist = ctm.get_thetas(training_dataset)
-    logger.info(f"Thetas shape: {dist.shape}")
+    logger.info(f"Thetas shape: ({len(dist)},{len(dist[0])})")
     with open(args.unpreproc_path) as f:
         text = list(map(lambda x: x, f.readlines()))
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--preproc_path",
+        default=PREPROC_TEXTS,
+        type=str,
+        help="The output path for preprocessed corpus. Default: %(default)s.",
+    )
+    parser.add_argument(
+        "--unpreproc_path",
+        default=UNPREPROC_TEXTS,
+        type=str,
+        help="The output path for unpreprocessed corpus. Default: %(default)s.",
+    )
+    parser.add_argument(
+        "--embeds_path",
+        default=EMBEDS_PATH,
+        type=str,
+        help="Path to cached embeddings. Default: %(default)s.",
+    )
+    parser.add_argument(
+        "--epoch",
+        default=49,
+        help="Epoch of the saved model. Default: %(default)s.",
+    )
+    parser.add_argument(
+        "--model_dir",
+        default=MODEL_DIR,
+        type=str,
+        help="The directory from which the saved model should be loaded. Default: %(default)s.",
+    )
+    parser.add_argument(
+        "--inference_type",
+        type=str,
+        choices=["contextual", "combined"],
+        default="contextual",
+        help="Topic modeling mode of the loaded model. One between: %(choice)s. Default: %(default)s.",
+    )
+    args = parser.parse_args()
+    main(args)
