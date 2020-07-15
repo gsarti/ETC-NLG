@@ -19,7 +19,6 @@ GPT and GPT-2 are fine-tuned using a causal language modeling (CLM) loss while B
 using a masked language modeling (MLM) loss.
 """
 
-EPOCHS=20
 
 import logging
 import math
@@ -27,6 +26,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional
 import time
+import argparse
 
 from transformers import (
     CONFIG_MAPPING,
@@ -50,7 +50,6 @@ logger = logging.getLogger(__name__)
 
 MODEL_CONFIG_CLASSES = list(MODEL_WITH_LM_HEAD_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
-TESTS = "../tests/"+str(time.strftime('%Y-%m-%d'))+"/"
 
 
 @dataclass
@@ -116,6 +115,9 @@ class DataTrainingArguments:
     overwrite_cache: bool = field(
         default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
     )
+    epochs: Optional[float] = field(
+        default=5, metadata={"help": "Number of fine-tuning epochs"}
+    )
 
 
 def get_dataset(args: DataTrainingArguments, tokenizer: PreTrainedTokenizer, evaluate=False):
@@ -132,6 +134,7 @@ def main():
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
+
 
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
@@ -221,8 +224,7 @@ def main():
         data_args.block_size = min(data_args.block_size, tokenizer.max_len)
 
     # Get datasets
-
-    training_args.num_train_epochs=EPOCHS
+    training_args.num_train_epochs=data_args.epochs
 
     train_dataset = get_dataset(data_args, tokenizer=tokenizer) if training_args.do_train else None
     eval_dataset = get_dataset(data_args, tokenizer=tokenizer, evaluate=True) if training_args.do_eval else None
@@ -247,10 +249,11 @@ def main():
             if model_args.model_name_or_path is not None and os.path.isdir(model_args.model_name_or_path)
             else None
         )
+        trainer.checkpoint_manager = False
         trainer.train(model_path=model_path)
-        trainer.save_model(TESTS)
-        # For convenience, we also re-save the tokenizer to the same directory,
-        # so that you can share your model easily on huggingface.co/models =)
+        trainer.save_model()
+        ## For convenience, we also re-save the tokenizer to the same directory,
+        ## so that you can share your model easily on huggingface.co/models =)
         if trainer.is_world_master():
             tokenizer.save_pretrained(training_args.output_dir)
 

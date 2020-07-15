@@ -199,7 +199,7 @@ def perturb_past(
             correction = SMALL_CONST * (probs <= SMALL_CONST).float().to(device).detach()
             corrected_probs = probs + correction.detach()
             kl_loss = kl_scale * ((corrected_probs * (corrected_probs / unpert_probs).log()).sum())
-            print(" kl_loss", kl_loss.data.cpu().numpy())
+            print(" kl_loss", kl_loss.data.cpu().numpy(), end="\t")
             loss += kl_loss
 
         loss_per_iter.append(loss.data.cpu().numpy())
@@ -703,7 +703,7 @@ def run_pplm_example(
             else:
                 pert_gen_text = tokenizer.decode(pert_gen_tok_text.tolist()[0])
 
-            print("= Perturbed generated text {} =".format(i + 1))
+            print("= Perturbed generated text {} on label {} =".format(i + 1, class_label))
             print(pert_gen_text)
             print()
         except Exception as exc:
@@ -755,7 +755,7 @@ if __name__ == "__main__":
         "--discrim_meta", type=str, default=None, help="Meta information for the generic discriminator",
     )
     parser.add_argument(
-        "--class_label", type=int, default=-1, help="Class label used for the discriminator",
+        "--class_label", type=str, help="Class label used for the discriminator",
     )
     parser.add_argument("--length", type=int, default=100)
     parser.add_argument("--stepsize", type=float, default=0.02)

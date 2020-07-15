@@ -40,7 +40,7 @@ np.random.seed(0)
 EPSILON = 1e-10
 example_sentence = "Tanto puro che talvolta dubito veramente che si tratti d'amore perché io altrimenti non potrei consegnarti neppure questa carta."
 max_length_seq = 1000
-TESTS = "../tests/"+str(time.strftime('%Y-%m-%d'))+"/discriminator/"
+
 
 class Discriminator(torch.nn.Module):
     """Transformer encoder followed by a Classification Head"""
@@ -230,6 +230,7 @@ def train_discriminator(
     save_model=False,
     cached=False,
     no_cuda=False,
+    savedir="../tests"
 ):
     device = "cuda" if torch.cuda.is_available() and not no_cuda else "cpu"
 
@@ -453,7 +454,7 @@ def train_discriminator(
         test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, collate_fn=collate_fn)
 
     if save_model:
-        with open(TESTS+"{}_classifier_head_meta.json".format(dataset), "w") as meta_file:
+        with open(savedir+"{}_classifier_head_meta.json".format(dataset), "w") as meta_file:
             json.dump(discriminator_meta, meta_file)
 
     optimizer = optim.Adam(discriminator.parameters(), lr=0.0001)
@@ -481,11 +482,11 @@ def train_discriminator(
         if save_model:
             # torch.save(
             #     discriminator.get_classifier().state_dict(),
-            #     TESTS+"{}_classifier_head_epoch_{}.pt".format(dataset, epoch + 1),
+            #     savedir+"{}_classifier_head_epoch_{}.pt".format(dataset, epoch + 1),
             # )
             torch.save(
                 discriminator.get_classifier().state_dict(),
-                TESTS+"{}_classifier_head.pt".format(dataset, epoch + 1),
+                savedir+"{}_classifier_head.pt".format(dataset, epoch + 1),
             )
 
 
@@ -523,6 +524,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_model", action="store_true", help="whether to save the model")
     parser.add_argument("--cached", action="store_true", help="whether to cache the input representations")
     parser.add_argument("--no_cuda", action="store_true", help="use to turn off cuda")
+    parser.add_argument("--savedir")
     args = parser.parse_args()
 
     train_discriminator(**(vars(args)))

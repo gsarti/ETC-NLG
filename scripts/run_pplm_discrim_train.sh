@@ -1,28 +1,32 @@
 #!/bin/bash
 
-source ../venv/bin/activate
-
-DATE=$(date +%Y-%m-%d)
-TIME=$(date +%H:%M:%S)
-TESTS="../tests/${DATE}"
-DATA="../data/trained_models"
-mkdir -p $TESTS
-
 ############
 # settings #
 ############
 
-BLOCK_SIZE=100
 export TRAIN_FILE="../data/letters_train.csv"
-MODEL_NAME="${TESTS}/fine_tuned_LM_blockSize=${BLOCK_SIZE}"
+MODEL="Svevo"
+BLOCK_SIZE=512
+LM_EPOCHS=5
+DISCRIM_EPOCHS=50
 
 #################
 # train discrim #
 #################	
 
-python3 transformers/run_pplm_discrim_train.py --batch_size=64 --epochs=10\
+source ../venv/bin/activate
+
+DATE=$(date +%Y-%m-%d)
+TIME=$(date +%H:%M:%S)
+DATA="../data/trained_models"
+LM_NAME="../tests/${MODEL}/fine_tuned_LM_blockSize=${BLOCK_SIZE}_ep=${LM_EPOCHS}"
+SAVEDIR="${LM_NAME}/discriminator_ep=${DISCRIM_EPOCHS}/"
+OUT="${SAVEDIR}/discrim_out.txt"
+mkdir -p $SAVEDIR
+
+python3 transformers/run_pplm_discrim_train.py --batch_size=64 --epochs=$DISCRIM_EPOCHS\
 	--save_model --dataset="generic" --dataset_fp=$TRAIN_FILE \
-	--pretrained_model=$MODEL_NAME \
+	--pretrained_model=$LM_NAME --log_interval=10 --savedir=$SAVEDIR > $OUT
 	# --no_cuda \
 
 deactivate
