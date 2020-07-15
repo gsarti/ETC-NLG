@@ -37,7 +37,9 @@ from pplm_classification_head import ClassificationHead
 from transformers import GPT2Tokenizer
 from transformers.file_utils import cached_path
 from transformers.modeling_gpt2 import GPT2LMHeadModel
-
+from transformers import AutoTokenizer, AutoModelWithLMHead, pipeline
+import pandas
+import os
 
 PPLM_BOW = 1
 PPLM_DISCRIM = 2
@@ -45,33 +47,33 @@ PPLM_BOW_DISCRIM = 3
 SMALL_CONST = 1e-15
 BIG_CONST = 1e10
 
-BAG_OF_WORDS_ARCHIVE_MAP = {
-    "legal": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/legal.txt",
-    "military": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/military.txt",
-    "politics": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/politics.txt",
-    "religion": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/religion.txt",
-    "science": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/science.txt",
-    "space": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/space.txt",
-    "technology": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/technology.txt",
-}
+# BAG_OF_WORDS_ARCHIVE_MAP = {
+#     "legal": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/legal.txt",
+#     "military": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/military.txt",
+#     "politics": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/politics.txt",
+#     "religion": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/religion.txt",
+#     "science": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/science.txt",
+#     "space": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/space.txt",
+#     "technology": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/technology.txt",
+# }
 
 DISCRIMINATOR_MODELS_PARAMS = {
-    "clickbait": {
-        "url": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/discriminators/clickbait_classifier_head.pt",
-        "class_size": 2,
-        "embed_size": 1024,
-        "class_vocab": {"non_clickbait": 0, "clickbait": 1},
-        "default_class": 1,
-        "pretrained_model": "gpt2-medium",
-    },
-    "sentiment": {
-        "url": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/discriminators/SST_classifier_head.pt",
-        "class_size": 5,
-        "embed_size": 1024,
-        "class_vocab": {"very_positive": 2, "very_negative": 3},
-        "default_class": 3,
-        "pretrained_model": "gpt2-medium",
-    },
+#     "clickbait": {
+#         "url": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/discriminators/clickbait_classifier_head.pt",
+#         "class_size": 2,
+#         "embed_size": 1024,
+#         "class_vocab": {"non_clickbait": 0, "clickbait": 1},
+#         "default_class": 1,
+#         "pretrained_model": "gpt2-medium",
+#     },
+#     "sentiment": {
+#         "url": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/discriminators/SST_classifier_head.pt",
+#         "class_size": 5,
+#         "embed_size": 1024,
+#         "class_vocab": {"very_positive": 2, "very_negative": 3},
+#         "default_class": 3,
+#         "pretrained_model": "gpt2-medium",
+#     },
 }
 
 
@@ -245,9 +247,12 @@ def perturb_past(
     return pert_past, new_accumulated_hidden, grad_norms, loss_per_iter
 
 
-def get_classifier(name: Optional[str], class_label: Union[str, int], device: str) -> Tuple[Optional[ClassificationHead], Optional[int]]:
+def get_classifier(model, name: Optional[str], class_label: Union[str, int], device: str) -> Tuple[Optional[ClassificationHead], Optional[int]]:
+    
     if name is None:
         return None, None
+
+    ######################### OLD CODE
 
     params = DISCRIMINATOR_MODELS_PARAMS[name]
     classifier = ClassificationHead(class_size=params["class_size"], embed_size=params["embed_size"]).to(device)
@@ -257,6 +262,7 @@ def get_classifier(name: Optional[str], class_label: Union[str, int], device: st
         resolved_archive_file = params["path"]
     else:
         raise ValueError("Either url or path have to be specified in the discriminator model parameters")
+    
     classifier.load_state_dict(torch.load(resolved_archive_file, map_location=device))
     classifier.eval()
 
@@ -282,6 +288,44 @@ def get_classifier(name: Optional[str], class_label: Union[str, int], device: st
         label_id = params["default_class"]
 
     return classifier, label_id
+
+    ######################### NEW CODE
+
+
+    # embed_size = model.transformer.config.hidden_size
+    # class_size = model.transformer.config.num_labels
+    # class_vocab = model.transformer.config.class_vocab
+    # default_class = model.transformer.config.default_class
+    # pretrained_model = model.transformer.config.pretrained_model
+    # classifier = ClassificationHead(class_size=class_size, embed_size=embed_size)
+    # ###
+    # classifier.eval()
+
+    # if isinstance(class_label, str):
+    #     if class_label in class_vocab:
+    #         label_id = class_vocab[class_label]
+    #     else:
+    #         label_id = default_class
+    #         print("class_label {} not in class_vocab".format(class_label))
+    #         print("available values are: {}".format(class_vocab))
+    #         print("using default class {}".format(label_id))
+
+    # elif isinstance(class_label, int):
+    #     if class_label in set(class_vocab.values()):
+    #         label_id = class_label
+    #     else:
+    #         label_id = default_class
+    #         print("class_label {} not in class_vocab".format(class_label))
+    #         print("available values are: {}".format(class_vocab))
+    #         print("using default class {}".format(label_id))
+
+    # else:
+    #     label_id = default_class
+
+    # return classifier, label_id
+
+    #################################
+
 
 
 def get_bag_of_words_indices(bag_of_words_ids_or_paths: List[str], tokenizer) -> List[List[List[int]]]:
@@ -337,7 +381,7 @@ def full_text_generation(
     repetition_penalty=1.0,
     **kwargs
 ):
-    classifier, class_id = get_classifier(discrim, class_label, device)
+    classifier, class_id = get_classifier(model, discrim, class_label, device)
 
     bow_indices = []
     if bag_of_words:
@@ -368,6 +412,7 @@ def full_text_generation(
         perturb=False,
         repetition_penalty=repetition_penalty,
     )
+
     if device == "cuda":
         torch.cuda.empty_cache()
 
@@ -566,8 +611,9 @@ def set_generic_model_params(discrim_weights, discrim_meta):
     with open(discrim_meta, "r") as discrim_meta_file:
         meta = json.load(discrim_meta_file)
     meta["path"] = discrim_weights
+    # discr_params = meta
     DISCRIMINATOR_MODELS_PARAMS["generic"] = meta
-
+    # return discr_params
 
 def run_pplm_example(
     pretrained_model="gpt2-medium",
@@ -596,6 +642,7 @@ def run_pplm_example(
     no_cuda=False,
     colorama=False,
     repetition_penalty=1.0,
+    savedir="../tests/"
 ):
     # set Random seed
     torch.manual_seed(seed)
@@ -604,6 +651,8 @@ def run_pplm_example(
     # set the device
     device = "cuda" if torch.cuda.is_available() and not no_cuda else "cpu"
 
+
+    ############################## OLD CODE
     if discrim == "generic":
         set_generic_model_params(discrim_weights, discrim_meta)
 
@@ -618,6 +667,19 @@ def run_pplm_example(
 
     # load tokenizer
     tokenizer = GPT2Tokenizer.from_pretrained(pretrained_model)
+
+    ############################# NEW CODE
+
+    # # load pretrained model
+    # model = AutoModelWithLMHead.from_pretrained(pretrained_model)
+    # model.to(device)
+    # model.eval()
+
+    # # load tokenizer
+    # tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
+
+
+    #########################################
 
     # Freeze GPT-2 weights
     for param in model.parameters():
@@ -666,15 +728,18 @@ def run_pplm_example(
         repetition_penalty=repetition_penalty,
     )
 
-    # untokenize unperturbed text
-    unpert_gen_text = tokenizer.decode(unpert_gen_tok_text.tolist()[0])
+    # # untokenize unperturbed text
+    # unpert_gen_text = tokenizer.decode(unpert_gen_tok_text.tolist()[0])
 
-    print("=" * 80)
-    print("= Unperturbed generated text =")
-    print(unpert_gen_text)
-    print()
+    # print("=" * 80)
+    # print("= Unperturbed generated text =")
+    # print(unpert_gen_text)
+    # print()
+
+
 
     generated_texts = []
+    pert_texts = []
 
     bow_word_ids = set()
     if bag_of_words and colorama:
@@ -709,10 +774,11 @@ def run_pplm_example(
         except Exception as exc:
             print("Ignoring error while generating perturbed text:", exc)
 
-        # keep the prefix, perturbed seq, original seq for each index
-        generated_texts.append((tokenized_cond_text, pert_gen_tok_text, unpert_gen_tok_text))
+        ## keep the prefix, perturbed seq, original seq for each index
+        # generated_texts.append((tokenized_cond_text, pert_gen_tok_text, unpert_gen_tok_text))
+        pert_texts.append(pert_gen_text)
 
-    return
+    return pert_texts
 
 
 if __name__ == "__main__":
@@ -724,7 +790,7 @@ if __name__ == "__main__":
         default="gpt2-medium",
         help="pretrained model name or path to local checkpoint",
     )
-    parser.add_argument("--cond_text", type=str, default="The lake", help="Prefix texts to condition on")
+    parser.add_argument("--cond_text", type=str, help="Prefix texts to condition on")
     parser.add_argument("--uncond", action="store_true", help="Generate from end-of-text as prefix")
     parser.add_argument(
         "--num_samples", type=int, default=1, help="Number of samples to generate from the modified latents",
@@ -783,6 +849,28 @@ if __name__ == "__main__":
     parser.add_argument(
         "--repetition_penalty", type=float, default=1.0, help="Penalize repetition. More than 1.0 -> less repetition",
     )
-
+    parser.add_argument("--savedir", type=str)
     args = parser.parse_args()
-    run_pplm_example(**vars(args))
+
+    cond_text_list=list(map(str, args.cond_text.strip('()').split(',')))
+    class_label_list=list(map(str, args.class_label.strip('()').split(',')))
+
+    df = pandas.DataFrame(columns=["perturbed_gen_text", "class_label"])
+
+    rows_count=0
+    for class_label in class_label_list:
+        for cond_text in cond_text_list:
+
+            args.cond_text=cond_text+" "
+            args.class_label=class_label
+            generated_texts = run_pplm_example(**vars(args)) 
+
+            for pert_gen_text in generated_texts:
+
+                df.loc[rows_count] = pandas.Series({"perturbed_gen_text":pert_gen_text, 
+                                                    "class_label":class_label})
+                rows_count+=1
+
+    os.makedirs(os.path.dirname(args.savedir), exist_ok=True)
+    df.to_csv(args.savedir+"/perturbed_generated_text.csv", 
+              index=False, header=True)

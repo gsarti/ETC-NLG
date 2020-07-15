@@ -6,9 +6,9 @@
 
 export TRAIN_FILE="../data/letters_train.csv"
 MODEL="Svevo"
-BLOCK_SIZE=512
-LM_EPOCHS=5
-DISCRIM_EPOCHS=50
+BLOCK_SIZE=128
+LM_EPOCHS=3
+DISCRIM_EPOCHS=5
 
 #################
 # train discrim #
