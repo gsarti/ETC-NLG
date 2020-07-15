@@ -1,8 +1,9 @@
 import spacy
+import math
 import logging
 import argparse
 import pandas as pd
-from tqdm import trange
+from tqdm import trange, tqdm
 from joblib import Parallel, delayed
 from collections import Counter
 
@@ -25,17 +26,17 @@ logger = logging.getLogger(__name__)
 
 
 def chunker(iterable, total_length, chunksize):
-    return (iterable[pos: pos + chunksize] for pos in range(0, total_length, chunksize))
+    return (iterable[pos: pos + chunksize] for pos in range(0, total_length + chunksize - 1, chunksize))
 
 
 def preprocess_parallel(args, texts):
     args.nlp = spacy.load(args.language)
     executor = Parallel(n_jobs=args.n_jobs, backend='multiprocessing', prefer="processes")
+    logger.info('Parsing text with spaCy...')
     do = delayed(preprocess_texts)
     chunks = chunker(texts, len(texts), chunksize=args.chunksize)
-    max_range = int(round(len(texts) / args.chunksize, 0))
+    max_range = int(math.ceil(len(texts) / args.chunksize))
     tasks = (do(args, chunk) for i, chunk in zip(trange(max_range),chunks))
-    logger.info('Parsing text with spaCy...')
     result = executor(tasks)
     result = [sentence for sublist in result for sentence in sublist]
     logger.info('Filtering extreme occurrences...')
@@ -44,9 +45,10 @@ def preprocess_parallel(args, texts):
     c = Counter(all_words)
     valid_words = [w[0] for w in c.most_common() if args.no_below <= w[1] <= no_above_abs]
     logger.info(f'Vocabulary size after filtering: {len(valid_words)}')
+    logger.info("Joining valid words per document...")
     preprocessed = [
         " ".join([w for w in text if w in valid_words])
-        for text in result
+        for text in tqdm(result)
     ]
     return preprocessed
 
@@ -76,6 +78,7 @@ def main(args):
     else:
         with open(args.corpus_path, 'r') as f:
             sentences = f.read().splitlines()
+    logger.info(f'Corpus length before preprocessing: {len(sentences)}')
     preproc = preprocess_parallel(args, sentences)
     with open(args.out_preproc_path, 'w+') as f:
         for text in preproc:
