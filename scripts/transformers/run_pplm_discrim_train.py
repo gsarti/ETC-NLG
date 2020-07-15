@@ -465,7 +465,7 @@ def train_discriminator(
         start = time.time()
         print("\nEpoch", epoch + 1)
 
-        train_epoch(
+        train_epoch( 
             discriminator=discriminator,
             data_loader=train_loader,
             optimizer=optimizer,

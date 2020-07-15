@@ -15,7 +15,7 @@ SAMPLES=10
 ITERS=10
 
 ############
-# run PPLM #
+# run PPLM # 
 ############
 
 source ../venv/bin/activate

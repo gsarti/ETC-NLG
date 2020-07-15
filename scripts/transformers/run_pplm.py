@@ -809,7 +809,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--discrim",
         "-D",
-        type=str,
+        type=str, 
         default=None,
         choices=("clickbait", "sentiment", "toxicity", "generic"),
         help="Discriminator to use",
