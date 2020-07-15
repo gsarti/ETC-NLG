@@ -703,7 +703,7 @@ def run_pplm_example(
             else:
                 pert_gen_text = tokenizer.decode(pert_gen_tok_text.tolist()[0])
 
-            print("= Perturbed generated text {} =".format(i + 1))
+            print("= Perturbed generated text {} on label {} =".format(i + 1, class_label))
             print(pert_gen_text)
             print()
         except Exception as exc:
