@@ -431,6 +431,8 @@ def train_discriminator(
             "default_class": 0,
         }
 
+    print("\n", discriminator_meta, "\n")
+
     end = time.time()
     print("Preprocessed {} data points".format(len(train_dataset) + len(test_dataset)))
     print("Data preprocessing took: {:.3f}s".format(end - start))
@@ -463,7 +465,7 @@ def train_discriminator(
         start = time.time()
         print("\nEpoch", epoch + 1)
 
-        train_epoch(
+        train_epoch( 
             discriminator=discriminator,
             data_loader=train_loader,
             optimizer=optimizer,
