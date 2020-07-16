@@ -66,4 +66,23 @@ python scripts/label_unpreprocessed.py
 python scripts/label_unpreprocessed.py \
     --inference_type combined \
     --save_path data/topic_annotated_svevo_combined.tsv
+
+# Create topic-labeled Svevo dataset for contextual and combined models
+# for Europarl IT and EN using the best scoring topic model.
+python scripts/label_unpreprocessed.py \
+    --preproc_path data/preprocessed_europarl_en.txt \
+    --unpreproc_path data/unpreprocessed_europarl_en.txt \
+    --embeds_path models/preprocessed_europarl_en_roberta-base \
+    --model_dir models/ctm_europarl_en_25_100_combined \
+    --save_path data/topic_annotated_europarl_en_combined.tsv \
+    --inference_type combined
+
+python scripts/label_unpreprocessed.py \
+    --preproc_path data/preprocessed_europarl_it.txt \
+    --unpreproc_path data/unpreprocessed_europarl_it.txt \
+    --embeds_path models/preprocessed_europarl_it_umberto-commoncrawl-cased-v1 \
+    --model_dir models/ctm_europarl_it_25_100_combined \
+    --save_path data/topic_annotated_europarl_it_combined.tsv \
+    --inference_type combined
+
 ```
