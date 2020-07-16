@@ -3,6 +3,7 @@ import sys
 import logging
 import argparse
 import pickle
+import torch
 import numpy as np
 from shutil import rmtree
 from prettytable import PrettyTable
@@ -10,7 +11,6 @@ from tqdm import tqdm
 
 from contextualized_topic_models.datasets.dataset import CTMDataset
 from contextualized_topic_models.utils.data_preparation import TextHandler
-from contextualized_topic_models.models.ctm import CTM
 from contextualized_topic_models.evaluation.measures import (
     TopicDiversity,
     CoherenceNPMI,
@@ -21,6 +21,7 @@ sys.path.append(os.getcwd())
 
 from sentence_transformers import SentenceTransformer
 from scripts.sent_transformers import CamemBERT, RoBERTa, Pooling
+from scripts.custom_ctm import CustomCTM
 
 PREPROC_TEXTS = 'data/preprocessed_svevo_texts.txt'
 UNPREPROC_TEXTS = 'data/unpreprocessed_svevo_texts.txt'
@@ -49,13 +50,6 @@ def embeddings_from_file(args):
         return np.array(model.encode(train_text))
 
 
-class CustomCTM(CTM):
-    """ Change format of saved models to make it more sane """
-    def _format_file(self):
-        epoch = self.nn_epoch + 1
-        return f"ctm_{self.n_components}_{epoch}_{type(self.model.inf_net).__name__}"
-
-
 def main(args):
     handler = TextHandler(args.preproc_path)
     handler.prepare()
@@ -76,6 +70,7 @@ def main(args):
             ctm = CustomCTM(
                 input_size=len(handler.vocab),
                 bert_input_size=args.embed_model_size,
+                id_name=args.model_identifier,
                 hidden_sizes=(args.hidden_size,args.hidden_size,args.hidden_size),
                 inference_type=inf_type,
                 n_components=n_topics,
@@ -121,6 +116,12 @@ if __name__ == "__main__":
         "RoBERTa architecture otherwise. Default: %(default)s.",
     )
     parser.add_argument(
+        "--model_identifier",
+        default="svevo",
+        type=str,
+        help="Model identifier used when saving the CTM to file. Default: %(default)s.",
+    )
+    parser.add_argument(
         "--embed_model_size",
         default=UMBERTO_SIZE,
         help="Size of embeddings used in the contextual language model. Default: %(default)s.",
@@ -153,7 +154,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_epochs",
         type=int,
-        default=200,
+        default=100,
         help="Number of training epochs. Default: %(default)s.",
     )
     parser.add_argument(

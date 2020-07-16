@@ -67,19 +67,22 @@ def main(args):
     if args.corpus_path == ORIG_CORPUS_PATH:
         data = pd.read_csv(args.corpus_path, sep=';', parse_dates=['date'])
         data = data[data.mainLanguage == "ITA"]
-        with open(args.out_unpreproc_path, 'w+') as f:
-            for text in data['text']:
-                f.write(text)
-                f.write('\n')
-        logger.info(f'Saved unpreprocessed corpus of length '
-                    f'{len(data["text"])} to {args.out_unpreproc_path}')
         sentences = data["text"]
     # We consider the corpus to be already in the right shape otherwise
     else:
         with open(args.corpus_path, 'r') as f:
             sentences = f.read().splitlines()
     logger.info(f'Corpus length before preprocessing: {len(sentences)}')
+    if args.topk != -1:
+        logger.info(f'Clipping length at {args.topk}')
+        sentences = sentences[:args.topk]
     preproc = preprocess_parallel(args, sentences)
+    with open(args.out_unpreproc_path, 'w+') as f:
+        for text in sentences:
+            f.write(text)
+            f.write('\n')
+        logger.info(f'Saved unpreprocessed corpus of length '
+                    f'{len(sentences)} to {args.out_unpreproc_path}')
     with open(args.out_preproc_path, 'w+') as f:
         for text in preproc:
             f.write(text)
@@ -149,6 +152,12 @@ if __name__ == "__main__":
         default=100,
         type=int,
         help="Defines the chunk size used in multiprocessing. Default: %(default)s."
+    )
+    parser.add_argument(
+        "--topk",
+        default=-1,
+        type=int,
+        help="Define the portion of input texts to be kept and saved. Default: keep all (%(default)s)."
     )
     args = parser.parse_args()
     main(args)
