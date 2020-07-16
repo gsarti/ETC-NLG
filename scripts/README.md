@@ -7,6 +7,7 @@
 python scripts/preprocess.py
 
 # Preprocess the EuroParl corpora
+# We consider only the top 50'000 sentences
 # Corpus size: 1'909'115 sentences
 # Vocabulary size: EN = 27'250, IT = 31'305
 python scripts/preprocess.py \

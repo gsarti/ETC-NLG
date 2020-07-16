@@ -72,12 +72,13 @@ def main(args):
     else:
         with open(args.corpus_path, 'r') as f:
             sentences = f.read().splitlines()
-    if args.topk != -1:
-        sentences = sentences[:args.topk]
     logger.info(f'Corpus length before preprocessing: {len(sentences)}')
+    if args.topk != -1:
+        logger.info(f'Clipping length at {args.topk}')
+        sentences = sentences[:args.topk]
     preproc = preprocess_parallel(args, sentences)
     with open(args.out_unpreproc_path, 'w+') as f:
-        for text in data['text']:
+        for text in sentences:
             f.write(text)
             f.write('\n')
         logger.info(f'Saved unpreprocessed corpus of length '
