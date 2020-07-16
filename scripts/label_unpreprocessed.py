@@ -5,6 +5,7 @@ import argparse
 import pickle
 import torch
 import numpy as np
+import pandas as pd
 
 from contextualized_topic_models.utils.data_preparation import TextHandler
 from contextualized_topic_models.utils.data_preparation import bert_embeddings_from_file
@@ -19,8 +20,9 @@ from scripts.custom_ctm import CustomCTM
 PREPROC_TEXTS = 'data/preprocessed_svevo_texts.txt'
 UNPREPROC_TEXTS = 'data/unpreprocessed_svevo_texts.txt'
 EMBEDS_PATH = "models/preprocessed_svevo_texts_umberto-commoncrawl-cased-v1"
-MODEL_DIR_CONTEXTUAL = "models/ctm_svevo_6_200_contextual"
-MODEL_DIR_COMBINED = "models/ctm_svevo_6_200_combined"
+SAVE_PATH = "data/topic_annotated_svevo_contextual.tsv" 
+MODEL_DIR_CONTEXTUAL = "models/ctm_svevo_6_100_contextual"
+MODEL_DIR_COMBINED = "models/ctm_svevo_6_100_combined"
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s  %(message)s",
@@ -39,7 +41,7 @@ def load_ctm(args):
         input_size=checkpoint['dcue_dict']['input_size'],
         bert_input_size=checkpoint['dcue_dict']['bert_size'],
         inference_type=args.inference_type,
-        id_name=checkpoint['dcue_dict']['id_name'],
+        id_name=checkpoint['dcue_dict']['identifier'],
         n_components=checkpoint['dcue_dict']['n_components'],
         model_type=checkpoint['dcue_dict']['model_type'],
         hidden_sizes=checkpoint['dcue_dict']['hidden_sizes'],
@@ -70,11 +72,31 @@ def main(args):
     with open(args.embeds_path, 'rb') as f:
         training_embeds = pickle.load(f)
     training_dataset = CTMDataset(handler.bow, training_embeds, handler.idx2token)
-    ctm = load_ctm(args.model_dir, args.epoch, args.inference_type)
+    ctm = load_ctm(args)
     dist = ctm.get_thetas(training_dataset)
     logger.info(f"Thetas shape: ({len(dist)},{len(dist[0])})")
     with open(args.unpreproc_path) as f:
-        text = list(map(lambda x: x, f.readlines()))
+        text = f.read().splitlines()
+    with open(args.preproc_path) as f:
+        text_preproc = f.read().splitlines()
+    df = pd.DataFrame({
+        "unpreproc_text" : text,
+        "preproc_text" : text_preproc
+    })
+    topics = ctm.get_topic_lists(5)
+    for i in range(len(dist[0])):
+        topic = "|".join(topics[i])
+        topic_scores = [round(x[i], 2) for x in dist]
+        df[topic] =  topic_scores
+    best_topics = np.argmax(dist, axis=1)
+    df["best_topic"] = ["|".join(topics[i]) for i in best_topics]
+    logger.info("Dataset preview:")
+    logger.info(df.head())
+    df.to_csv(args.save_path, sep="\t")
+    logger.info(f"Dataset saved to {args.save_path}") 
+     
+        
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -97,15 +119,16 @@ if __name__ == "__main__":
         help="Path to cached embeddings. Default: %(default)s.",
     )
     parser.add_argument(
-        "--epoch",
-        default=49,
-        help="Epoch of the saved model. Default: %(default)s.",
-    )
-    parser.add_argument(
         "--model_dir",
         default=None,
         type=str,
         help="The directory from which the saved model should be loaded. Default: %(default)s.",
+    )
+    parser.add_argument(
+        "--save_path",
+        default=SAVE_PATH,
+        type=str,
+        help="The path to which the dataset with annotated topic predictions should be saved. Default: %(default)s.",
     )
     parser.add_argument(
         "--inference_type",
@@ -118,3 +141,4 @@ if __name__ == "__main__":
     if args.model_dir is None:
         args.model_dir = MODEL_DIR_CONTEXTUAL if args.inference_type == "contextual" else MODEL_DIR_COMBINED
     main(args)
+

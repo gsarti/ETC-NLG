@@ -32,4 +32,17 @@ python scripts/preprocess.py \
 # Generates and evaluates topic models in range 3-10 topics for
 # the Svevo corpus
 python scripts/eval_topic_models.py
+
+# Do it only for topic size 6 using both models
+python scripts/eval_topic_models.py \
+    --n_topics 6 \
+    --modes contextual combined
+
+# Create the topic-labeled Svevo dataset for the contextual model
+python scripts/label_unpreprocessed.py
+
+# Create the topic-labeled Svevo dataset for the combined model
+python scripts/label_unpreprocessed.py \
+    --inference_type combined \
+    --save_path data/topic_annotated_svevo_combined.tsv
 ```
