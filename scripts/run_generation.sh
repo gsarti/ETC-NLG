@@ -5,23 +5,22 @@
 ############
 
 MODEL="Svevo"
+DATASET="gold" # gold, contextual, combined
 BLOCK_SIZE=128
-EPOCHS=10
-LENGTH=50
-PROMPT="Tanto puro che"
+EPOCHS=5
+LENGTH=30
+PROMPT="Se potessi"
 
 ############
 # generate #
 ############
 
-source ../venv/bin/activate
-DATE=$(date +%Y-%m-%d)
-TIME=$(date +%H:%M:%S)
-TESTS="../tests/${MODEL}"
-TRAINED_MODELS="../data/trained_models"
+TESTS="../tests/${MODEL}_${DATASET}"
 MODEL_NAME="${TESTS}/fine_tuned_LM_blockSize=${BLOCK_SIZE}_ep=${EPOCHS}"
-mkdir -p $TESTS
 OUT="${MODEL_NAME}/lm_generation_out.txt"
+
+source ../venv/bin/activate
+mkdir -p $TESTS
 
 python transformers/run_generation.py \
     --model_type=gpt2 --model_name_or_path=$MODEL_NAME \

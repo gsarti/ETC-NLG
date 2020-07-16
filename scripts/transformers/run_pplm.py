@@ -37,7 +37,6 @@ from pplm_classification_head import ClassificationHead
 from transformers import GPT2Tokenizer
 from transformers.file_utils import cached_path
 from transformers.modeling_gpt2 import GPT2LMHeadModel
-from transformers import AutoTokenizer, AutoModelWithLMHead, pipeline
 import pandas
 import os
 
@@ -46,6 +45,7 @@ PPLM_DISCRIM = 2
 PPLM_BOW_DISCRIM = 3
 SMALL_CONST = 1e-15
 BIG_CONST = 1e10
+
 
 # BAG_OF_WORDS_ARCHIVE_MAP = {
 #     "legal": "https://s3.amazonaws.com/models.huggingface.co/bert/pplm/bow/legal.txt",
@@ -157,7 +157,9 @@ def perturb_past(
         # Compute hidden using perturbed past
         perturbed_past = list(map(add, past, curr_perturbation))
         _, _, _, curr_length, _ = curr_perturbation[0].shape
+
         all_logits, _, all_hidden = model(last, past=perturbed_past)
+
         hidden = all_hidden[-1]
         new_accumulated_hidden = accumulated_hidden + torch.sum(hidden, dim=1).detach()
         # TODO: Check the layer-norm consistency of this with trained discriminator (Sumanth)
@@ -252,8 +254,6 @@ def get_classifier(model, name: Optional[str], class_label: Union[str, int], dev
     if name is None:
         return None, None
 
-    ######################### OLD CODE
-
     params = DISCRIMINATOR_MODELS_PARAMS[name]
     classifier = ClassificationHead(class_size=params["class_size"], embed_size=params["embed_size"]).to(device)
     if "url" in params:
@@ -288,44 +288,6 @@ def get_classifier(model, name: Optional[str], class_label: Union[str, int], dev
         label_id = params["default_class"]
 
     return classifier, label_id
-
-    ######################### NEW CODE
-
-
-    # embed_size = model.transformer.config.hidden_size
-    # class_size = model.transformer.config.num_labels
-    # class_vocab = model.transformer.config.class_vocab
-    # default_class = model.transformer.config.default_class
-    # pretrained_model = model.transformer.config.pretrained_model
-    # classifier = ClassificationHead(class_size=class_size, embed_size=embed_size)
-    # ###
-    # classifier.eval()
-
-    # if isinstance(class_label, str):
-    #     if class_label in class_vocab:
-    #         label_id = class_vocab[class_label]
-    #     else:
-    #         label_id = default_class
-    #         print("class_label {} not in class_vocab".format(class_label))
-    #         print("available values are: {}".format(class_vocab))
-    #         print("using default class {}".format(label_id))
-
-    # elif isinstance(class_label, int):
-    #     if class_label in set(class_vocab.values()):
-    #         label_id = class_label
-    #     else:
-    #         label_id = default_class
-    #         print("class_label {} not in class_vocab".format(class_label))
-    #         print("available values are: {}".format(class_vocab))
-    #         print("using default class {}".format(label_id))
-
-    # else:
-    #     label_id = default_class
-
-    # return classifier, label_id
-
-    #################################
-
 
 
 def get_bag_of_words_indices(bag_of_words_ids_or_paths: List[str], tokenizer) -> List[List[List[int]]]:
@@ -509,6 +471,7 @@ def generate_text_pplm(
                 _, past, _ = model(output_so_far[:, :-1])
 
         unpert_logits, unpert_past, unpert_all_hidden = model(output_so_far)
+
         unpert_last_hidden = unpert_all_hidden[-1]
 
         # check if we are abowe grad max length
@@ -552,6 +515,7 @@ def generate_text_pplm(
                 pert_past = past
 
         pert_logits, past, pert_all_hidden = model(last, past=pert_past)
+
         pert_logits = pert_logits[:, -1, :] / temperature  # + SMALL_CONST
 
         for token_idx in set(output_so_far[0].tolist()):
@@ -651,8 +615,6 @@ def run_pplm_example(
     # set the device
     device = "cuda" if torch.cuda.is_available() and not no_cuda else "cpu"
 
-
-    ############################## OLD CODE
     if discrim == "generic":
         set_generic_model_params(discrim_weights, discrim_meta)
 
@@ -667,19 +629,6 @@ def run_pplm_example(
 
     # load tokenizer
     tokenizer = GPT2Tokenizer.from_pretrained(pretrained_model)
-
-    ############################# NEW CODE
-
-    # # load pretrained model
-    # model = AutoModelWithLMHead.from_pretrained(pretrained_model)
-    # model.to(device)
-    # model.eval()
-
-    # # load tokenizer
-    # tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
-
-
-    #########################################
 
     # Freeze GPT-2 weights
     for param in model.parameters():
@@ -728,15 +677,13 @@ def run_pplm_example(
         repetition_penalty=repetition_penalty,
     )
 
-    # # untokenize unperturbed text
-    # unpert_gen_text = tokenizer.decode(unpert_gen_tok_text.tolist()[0])
+    # untokenize unperturbed text
+    unpert_gen_text = tokenizer.decode(unpert_gen_tok_text.tolist()[0])
 
-    # print("=" * 80)
-    # print("= Unperturbed generated text =")
-    # print(unpert_gen_text)
-    # print()
-
-
+    print("=" * 80)
+    print("= Unperturbed generated text =")
+    print(unpert_gen_text)
+    print()
 
     generated_texts = []
     pert_texts = []
@@ -852,16 +799,16 @@ if __name__ == "__main__":
     parser.add_argument("--savedir", type=str)
     args = parser.parse_args()
 
-    cond_text_list=list(map(str, args.cond_text.strip('()').split(',')))
-    class_label_list=list(map(str, args.class_label.strip('()').split(',')))
+    if args.uncond:
 
-    df = pandas.DataFrame(columns=["perturbed_gen_text", "class_label"])
+        class_label_list=list(map(str, args.class_label.strip('()').split(',')))
 
-    rows_count=0
-    for class_label in class_label_list:
-        for cond_text in cond_text_list:
+        df = pandas.DataFrame(columns=["perturbed_gen_text", "class_label"])
 
-            args.cond_text=cond_text+" "
+        rows_count=0
+
+        for class_label in class_label_list:
+    
             args.class_label=class_label
             generated_texts = run_pplm_example(**vars(args)) 
 
@@ -871,6 +818,35 @@ if __name__ == "__main__":
                                                     "class_label":class_label})
                 rows_count+=1
 
-    os.makedirs(os.path.dirname(args.savedir), exist_ok=True)
-    df.to_csv(args.savedir+"/perturbed_generated_text.csv", 
-              index=False, header=True)
+        os.makedirs(os.path.dirname(args.savedir), exist_ok=True)
+        df.to_csv(args.savedir+"/perturbed_generated_text.csv", 
+                  index=False, header=True)
+
+
+    else:
+
+        cond_text_list=list(map(str, args.cond_text.strip('()').split(',')))
+        class_label_list=list(map(str, args.class_label.strip('()').split(',')))
+
+        df = pandas.DataFrame(columns=["perturbed_gen_text", "class_label"])
+
+        rows_count=0
+        for class_label in class_label_list:
+
+            for cond_text in cond_text_list:
+
+                args.cond_text=cond_text
+                args.class_label=class_label
+                generated_texts = run_pplm_example(**vars(args)) 
+
+                for pert_gen_text in generated_texts:
+
+                    df.loc[rows_count] = pandas.Series({"perturbed_gen_text":pert_gen_text, 
+                                                        "class_label":class_label})
+                    rows_count+=1
+
+        os.makedirs(os.path.dirname(args.savedir), exist_ok=True)
+        df.to_csv(args.savedir+"/perturbed_generated_text.csv", 
+                  index=False, header=True)
+
+

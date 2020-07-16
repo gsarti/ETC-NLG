@@ -33,7 +33,7 @@ from tqdm import tqdm, trange
 
 from pplm_classification_head import ClassificationHead
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
-from transformers import AutoTokenizer, AutoModelWithLMHead, pipeline, GPT2Tokenizer
+from transformers import AutoTokenizer, AutoModelWithLMHead, pipeline
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -47,10 +47,10 @@ class Discriminator(torch.nn.Module):
 
     def __init__(self, class_size, pretrained_model="gpt2-medium", cached_mode=False, device="cpu"):
         super().__init__()
-        # self.tokenizer = GPT2Tokenizer.from_pretrained(pretrained_model)
-        # self.encoder = GPT2LMHeadModel.from_pretrained(pretrained_model)
-        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
-        self.encoder = AutoModelWithLMHead.from_pretrained(pretrained_model)
+        self.tokenizer = GPT2Tokenizer.from_pretrained(pretrained_model)
+        self.encoder = GPT2LMHeadModel.from_pretrained(pretrained_model)
+        # self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
+        # self.encoder = AutoModelWithLMHead.from_pretrained(pretrained_model)
         self.embed_size = self.encoder.transformer.config.hidden_size
         self.classifier_head = ClassificationHead(class_size=class_size, embed_size=self.embed_size)
         self.cached_mode = cached_mode
@@ -68,6 +68,10 @@ class Discriminator(torch.nn.Module):
         mask = x.ne(0).unsqueeze(2).repeat(1, 1, self.embed_size).float().to(self.device).detach()
         # print(x.shape, self.embed_size, mask.shape)
         # print(vars(self.encoder.transformer.config))
+        # print(self.encoder.transformer(x)[0].shape)
+        # print(len(self.encoder.transformer(x)[1]))
+        # print([y.shape for y in self.encoder.transformer(x)[1]])
+        # exit()
         hidden, _ = self.encoder.transformer(x)
         masked_hidden = hidden * mask
         avg_hidden = torch.sum(masked_hidden, dim=1) / (torch.sum(mask, dim=1).detach() + EPSILON)
@@ -459,7 +463,7 @@ def train_discriminator(
         with open(savedir+"{}_classifier_head_meta.json".format(dataset), "w") as meta_file:
             json.dump(discriminator_meta, meta_file)
 
-    optimizer = optim.Adam(discriminator.parameters(), lr=0.0001)
+    optimizer = optim.Adam(discriminator.parameters(), lr=0.001)
 
     for epoch in range(epochs):
         start = time.time()
