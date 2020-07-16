@@ -18,3 +18,4 @@ data/
 !data/README.md
 !data/carteggio_svevo.csv
 !data/classificazione_epistolario.tsv
+scripts/.data/
