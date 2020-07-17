@@ -7,7 +7,7 @@ import random
 import csv as csv_lib
 from sklearn import preprocessing
 import pandas as pd
-
+import argparse
 
 DATA = "../data/"
 TESTS = "../tests/"
@@ -29,23 +29,33 @@ def _split_string(str, max_sentence_length, return_all_splits, sep=" "):
 
     return res if return_all_splits else [res[0]]
 
-def _cut_sentences(labeled_df, max_sentence_length, return_all_splits):
 
-    cut_sentences = [{"label":row["label"], "text": cut_sentence}
-                        for idx, row in labeled_df.iterrows()
-                        for cut_sentence in _split_string(str=row["text"], 
-                        max_sentence_length=max_sentence_length, 
-                        return_all_splits=return_all_splits)]
+def _cut_sentences_df(df, labeled, max_sentence_length, return_all_splits):
+
+    if labeled:
+
+        # print("\nUnique labels:\n", np.unique(df[["label"]]))
+        cut_sentences = [{"label":row["label"], "text": cut_sentence}
+                            for idx, row in df.iterrows()
+                            for cut_sentence in _split_string(str=row["text"], 
+                            max_sentence_length=max_sentence_length, 
+                            return_all_splits=return_all_splits)]
+
+    else:   
+        cut_sentences = [{"text": cut_sentence}
+                            for idx, row in df.iterrows()
+                            for cut_sentence in _split_string(str=row["text"], 
+                            max_sentence_length=max_sentence_length, 
+                            return_all_splits=return_all_splits)]
 
     cut_df = pd.DataFrame(cut_sentences)
-
-    print(cut_df.head())
-    print("\nUnique labels:\n", np.unique(cut_df[["label"]]))
     return cut_df
 
-def _build_labeled_df(df, dataset):
+def _build_labeled_df(df, labels):
 
-    if dataset == "gold":
+    print("\n== Preprocessing labeled dataset", labels," ==")
+
+    if labels == "gold":
 
         # renaming cols
         df.columns=['TESTO', 'ID', 'DESTINATARIO', 'LUOGO', 'DATA', 'SALUTO_APERTURA ',
@@ -72,11 +82,7 @@ def _build_labeled_df(df, dataset):
                          for class_idx, class_name in enumerate(new_classes)
                          if row[class_name]>=1]
 
-        labeled_df = pd.DataFrame(labeled_text)
-
-        print(labeled_df.groupby("label").agg(['count']))
-
-    elif dataset == "contextual" or dataset == "combined":
+    elif labels == "contextual" or labels == "combined":
 
         classes = list(np.unique(df[["best_topic"]]))
 
@@ -85,12 +91,12 @@ def _build_labeled_df(df, dataset):
                          for class_idx, class_name in enumerate(classes)
                          if row[class_name]>=0.6]
 
-        labeled_df = pd.DataFrame(labeled_text)
-
-        print(labeled_df.groupby("label").agg(['count']))
-
     else:
         raise NotImplementedError()
+
+    labeled_df = pd.DataFrame(labeled_text, columns=["label","text"])
+
+    print(labeled_df.groupby("label").agg(['count']))
 
     return labeled_df
 
@@ -112,40 +118,74 @@ def _save_df(df, csv, txt, filepath, filename):
         f.close()
 
 
-def preprocess_labeled_data(dataset):
-    random.seed(0)
+def preprocess_labeled_data(model, max_sentence_length, labels):
 
-    if dataset == "gold":
+    if model=="Svevo":
+    
+        ### txt files for LM fine tuning
 
-        df = pandas.read_excel(DATA+"classificazione_lettere.xlsx")
+        if labels == "unlabeled":
 
-    elif dataset == "contextual" or dataset == "combined":
+            print("\n== Preprocessing unlabeled dataset ==")
 
-        df = pandas.read_csv(DATA+"topic_annotated_svevo_"+dataset+".tsv", sep="\t")
+            df = pandas.read_excel(DATA+"classificazione_lettere.xlsx")[["TESTO"]]
+            df.columns = ["text"]
 
+            random.seed(0)
+            msk = np.random.rand(len(df)) < 0.8
+            train = df[msk]
+            test = df[~msk]
+
+            filepath=TESTS+"Svevo/datasets/"
+            filename="unlabeled_letters"
+
+            cut_train = _cut_sentences_df(train, labeled=False, 
+                max_sentence_length=max_sentence_length, return_all_splits=True)
+            cut_test = _cut_sentences_df(test, labeled=False, 
+                max_sentence_length=max_sentence_length, return_all_splits=True)
+
+            _save_df(cut_train, csv=False, txt=True, filepath=filepath, 
+                filename=filename+"_train_"+str(max_sentence_length))
+            _save_df(cut_test, csv=False, txt=True, filepath=filepath,
+                filename=filename+"_test_"+str(max_sentence_length))
+
+            print(cut_train.head())
+
+        ### csv files for PPLM discrim training
+
+        else:
+
+            if labels == "gold":
+
+                df = pandas.read_excel(DATA+"classificazione_lettere.xlsx")
+
+            elif labels == "contextual" or labels == "combined":
+
+                df = pandas.read_csv(DATA+"topic_annotated_svevo_"+labels+".tsv", sep="\t")
+
+            labeled_df = _build_labeled_df(df, labels)
+
+            # cut sentences for discrim training
+            cut_full = _cut_sentences_df(labeled_df, labeled=True, 
+                max_sentence_length=max_sentence_length, return_all_splits=False)
+
+            filepath=TESTS+"Svevo/datasets/"
+            filename="Svevo_"+str(labels)
+            _save_df(cut_full, csv=True, txt=False, filepath=filepath, 
+                filename=filename+"_"+str(max_sentence_length))
+    
     else:
         raise NotImplementedError()
 
-    labeled_df = _build_labeled_df(df, dataset)
-
-    # train test split
-    msk = np.random.rand(len(labeled_df)) < 0.8
-    train = labeled_df[msk]
-    test = labeled_df[~msk]
-
-    # cut sentences for discrim training
-    cut_full = _cut_sentences(labeled_df, max_sentence_length=1000, return_all_splits=False)
-
-    filepath=TESTS+"Svevo_"+str(dataset)+"/"
-    filename="Svevo_"+str(dataset)
-
-    ### txt files for LM fine tuning
-    _save_df(train, csv=False, txt=True, filepath=filepath, filename=filename+"_train")
-    _save_df(test, csv=False, txt=True, filepath=filepath, filename=filename+"_test")
-
-    ### csv files for PPLM discrim training
-    _save_df(cut_full, csv=True, txt=False, filepath=filepath, filename=filename+"_full")
+def main(args):
+    preprocess_labeled_data(args.model, args.max_sentence_length, args.labels)
 
 
-preprocess_labeled_data(dataset="combined")
+if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, default="Svevo")
+    parser.add_argument("--max_sentence_length", type=int)
+    parser.add_argument("--labels", type=str, default="unlabeled")
+    args = parser.parse_args()
+    main(args)

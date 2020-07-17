@@ -803,7 +803,7 @@ if __name__ == "__main__":
 
         class_label_list=list(map(str, args.class_label.strip('()').split(',')))
 
-        df = pandas.DataFrame(columns=["perturbed_gen_text", "class_label"])
+        df = pandas.DataFrame(columns=["cond_text", "perturbed_gen_text", "class_label"])
 
         rows_count=0
 
@@ -814,7 +814,8 @@ if __name__ == "__main__":
 
             for pert_gen_text in generated_texts:
 
-                df.loc[rows_count] = pandas.Series({"perturbed_gen_text":pert_gen_text, 
+                df.loc[rows_count] = pandas.Series({"cond_text":"<|endoftext|>",
+                                                    "perturbed_gen_text":pert_gen_text, 
                                                     "class_label":class_label})
                 rows_count+=1
 
@@ -828,7 +829,7 @@ if __name__ == "__main__":
         cond_text_list=list(map(str, args.cond_text.strip('()').split(',')))
         class_label_list=list(map(str, args.class_label.strip('()').split(',')))
 
-        df = pandas.DataFrame(columns=["perturbed_gen_text", "class_label"])
+        df = pandas.DataFrame(columns=["cond_text", "perturbed_gen_text", "class_label"])
 
         rows_count=0
         for class_label in class_label_list:
@@ -841,7 +842,8 @@ if __name__ == "__main__":
 
                 for pert_gen_text in generated_texts:
 
-                    df.loc[rows_count] = pandas.Series({"perturbed_gen_text":pert_gen_text, 
+                    df.loc[rows_count] = pandas.Series({"cond_text":cond_text,
+                                                        "perturbed_gen_text":pert_gen_text, 
                                                         "class_label":class_label})
                     rows_count+=1
 
