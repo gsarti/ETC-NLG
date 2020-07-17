@@ -1,5 +1,7 @@
 # Instructions
 
+## Topic Models
+
 ```shell
 # Preprocess the Svevo corpus (default)
 # Corpus size: 826 paragraphs
@@ -86,3 +88,48 @@ python scripts/label_unpreprocessed.py \
     --inference_type combined
 
 ```
+
+## Plug and Play Models
+
+
+`run_lm_fine_tuning.sh` performs fine-tuning on a pre-trained language model:
+*GePpeTto* for `Svevo` and `EuroParlIta` datasets and *GPT-2* for `EuroParlEng` datasets.
+
+`run_generation.sh` generates sentences from a fine-tuned language model.
+
+`run_pplm_discrim_train.sh` trains a discriminator on a labeled dataset.
+
+`run_pplm.sh` used a discriminator model to generate text conditioned on an input prefix string and a conditioning class.
+
+
+### Scripts settings 
+
+- `MODEL` refers to the base dataset for language modelling. It can be either "Svevo", "EuroParlIta" or "EuroParlEng"
+- `LM_BLOCK_SIZE` is the maximum allowed sequence length after tokenization during fine-tuning
+- `LM_EPOCHS` is the number of epochs for fine-tuning
+- `LENGTH` is the lenght of the generated string
+- `PROMPT` is the input prefix for the generation of sentences
+- `LABELS` is the chosen class of labels, which can be either:
+    - "gold" is a human-labeled dataset
+    - "contextual" is labeled by a *contextual topic model*
+    - "combined" is labeled by a *combined topic model*
+- `DISCRIM_BLOCK_SIZE` is the maximum lenght of sequences for the discriminator
+- `DISCRIM_EPOCHS` is the number of training epochs for the discriminator
+- `SAMPLES` is the number of sentences produced by a Plug and Play model for each conditioning class and conditioning input
+- `ITERS` is the number of iterations of Plug and Play model through the conditioned text
+
+
+### Scripts outputs
+
+All the trained models, output texts and datasets are saved in `../tests/` directory, with the following structure:
+
+- tests/
+    - Svevo/
+        - datasets/
+        - fine_tuned_LM/
+            - discriminator_gold
+            - ...
+    - EuroParlIta/
+        - ...    
+    - EuroParlEng/
+        - ...

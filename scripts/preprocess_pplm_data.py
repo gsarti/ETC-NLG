@@ -90,7 +90,7 @@ def _build_labeled_df(df, labels):
                          for idx, row in df.iterrows()
                          for class_idx, class_name in enumerate(classes)
                          if row[class_name]>=0.6]
-
+                         
     else:
         raise NotImplementedError()
 
@@ -173,7 +173,7 @@ def preprocess_labeled_data(model, max_sentence_length, labels):
             filename="Svevo_"+str(labels)
             _save_df(cut_full, csv=True, txt=False, filepath=filepath, 
                 filename=filename+"_"+str(max_sentence_length))
-    
+
     else:
         raise NotImplementedError()
 

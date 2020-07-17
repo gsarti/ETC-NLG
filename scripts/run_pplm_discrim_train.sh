@@ -4,12 +4,12 @@
 # settings #
 ############
 
-MODEL="Svevo" # Svevo, EuroParl
-LABELS="contextual" # gold, contextual, combined
+MODEL="Svevo" # Svevo, EuroParlIta, EuroParlEng
+LABELS="gold" # gold, contextual, combined
 LM_BLOCK_SIZE=128
-LM_EPOCHS=50
+LM_EPOCHS=2
 DISCRIM_BLOCK_SIZE=1500
-DISCRIM_EPOCHS=8
+DISCRIM_EPOCHS=10
 
 #################
 # train discrim #
@@ -28,15 +28,18 @@ OUT="${SAVEDIR}/discrim_out.txt"
 if [ "${MODEL}"=="Svevo" ]; then 
 	EXAMPLE_SENTENCE="Tanto puro che talvolta dubito veramente che si tratti d'amore perché io altrimenti non potrei consegnarti neppure questa carta."
 
-elif [ "${MODEL}"=="EuroParl" ]; then
+elif [ "${MODEL}"=="EuroParlIta" ]; then
+	EXAMPLE_SENTENCE=""
+
+elif [ "${MODEL}"=="EuroParlEng" ]; then
 	EXAMPLE_SENTENCE=""
 fi
 
 mkdir -p $SAVEDIR
 python3 transformers/run_pplm_discrim_train.py --batch_size=32 --epochs=$DISCRIM_EPOCHS \
-	--example_sentence="${EXAMPLE_SENTENCE}" \
+	--example_sentence="${EXAMPLE_SENTENCE}" --no_cuda \
 	--save_model --dataset="generic" --dataset_fp=$DATASET \
-	--pretrained_model=$LM_NAME --log_interval=10 --savedir=$SAVEDIR > $OUT
+	--pretrained_model=$LM_NAME --log_interval=10 --savedir=$SAVEDIR # > $OUT
 	# --no_cuda \
 
 deactivate

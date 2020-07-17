@@ -150,6 +150,7 @@ def train_epoch(data_loader, discriminator, optimizer, epoch=0, log_interval=10,
         loss.backward(retain_graph=True)
         optimizer.step()
 
+        pred_t = output_t.argmax(dim=1, keepdim=True)
         samples_so_far += len(input_t)
 
         if batch_idx % log_interval == 0:
