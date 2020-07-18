@@ -866,6 +866,9 @@ if __name__ == "__main__":
 
     else:
 
+        filename="/generated_text_labels="+str(args.class_label)\
+        +"_samples="+str(args.num_samples)+".csv"
+
         cond_text_list=list(map(str, args.cond_text.strip('()').split(',')))
         # class_label_list=list(map(str, args.class_label.strip('()').split(',')))
 
@@ -888,8 +891,7 @@ if __name__ == "__main__":
                                                         "class_label":class_label})
                     rows_count+=1
 
-        filename="/generated_text_labels="+str(args.class_label)\
-                +"_samples="+str(args.num_samples)+".csv"
+
         os.makedirs(os.path.dirname(args.savedir), exist_ok=True)
         df.to_csv(args.savedir+filename, index=False, header=True)
 

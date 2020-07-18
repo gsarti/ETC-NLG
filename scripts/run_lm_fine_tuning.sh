@@ -13,28 +13,35 @@ LM_EPOCHS=2
 ################
 
 source ../venv/bin/activate
-python3 preprocess_pplm_data.py --labels="unlabeled" --model=$MODEL \
-		--max_sentence_length=$LM_BLOCK_SIZE
 
 TESTS="../tests/${MODEL}"
-export TRAIN_FILE="${TESTS}/datasets/unlabeled_letters_train_${LM_BLOCK_SIZE}.txt"
-export TEST_FILE="${TESTS}/datasets/unlabeled_letters_test_${LM_BLOCK_SIZE}.txt"
-OUT_DIR="${TESTS}/fine_tuned_LM_blockSize=${LM_BLOCK_SIZE}_ep=${LM_EPOCHS}"
-OUT="${OUT_DIR}/lm_fine_tuning_out.txt"
+TRAIN_FILE="${TESTS}/datasets/unlabeled_${MODEL}_train_${LM_BLOCK_SIZE}.txt"
+TEST_FILE="${TESTS}/datasets/unlabeled_${MODEL}_test_${LM_BLOCK_SIZE}.txt"
 
-if [[ "${MODEL}"=="Svevo" ]] ; then
+if [ ! -f "${TRAIN_FILE}" ]; then
+    python3 preprocess_pplm_data.py --labels="unlabeled" --model=$MODEL \
+    		--max_sentence_length=$LM_BLOCK_SIZE
+fi
+
+
+if [ "${MODEL}"=="Svevo" ] ; then
 
 	BASE_LM_NAME="LorenzoDeMattei/GePpeTto"
 
-elif [[ "${MODEL}"=="EuroParlIta" ]]; then
+elif [ "${MODEL}"=="EuroParlIta" ]; then
 
 	BASE_LM_NAME="LorenzoDeMattei/GePpeTto"
 
-elif [[ "${MODEL}"=="EuroParlEng" ]]; then
+elif [ "${MODEL}"=="EuroParlEng" ]; then
 
 	BASE_LM_NAME="gpt2-medium"
 
 fi
+
+export TRAIN_FILE="${TRAIN_FILE}"
+export TEST_FILE="${TEST_FILE}"
+OUT_DIR="${TESTS}/fine_tuned_LM_blockSize=${LM_BLOCK_SIZE}_ep=${LM_EPOCHS}"
+OUT="${OUT_DIR}/lm_fine_tuning_out.txt"
 
 mkdir -p $OUT_DIR
 python3 transformers/run_language_modeling.py \

@@ -52,6 +52,7 @@ class Discriminator(torch.nn.Module):
         self.classifier_head = ClassificationHead(class_size=class_size, embed_size=self.embed_size)
         self.cached_mode = cached_mode
         self.device = device
+        print("\nEmbedding size =",self.embed_size)
 
     def get_classifier(self):
         return self.classifier_head

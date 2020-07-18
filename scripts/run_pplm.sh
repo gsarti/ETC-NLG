@@ -24,11 +24,15 @@ DISCR_WEIGHTS="${DISCR_PATH}/generic_classifier_head.pt"
 OUT="${DISCR_PATH}/pplm_out.txt"
 SAVEDIR="${DISCR_PATH}/"
 
-if [[ "${MODEL}"=="Svevo" ]] ; then
+if [ "${MODEL}"=="Svevo" ] ; then
 
 	COND_TEXTS="Se potessi,Io sono,La tua,Un giorno"
 
-elif [[ "${MODEL}"=="EuroParl" ]]; then
+elif [ "${MODEL}"=="EuroParlIta" ]; then
+
+	COND_TEXTS=""
+
+elif [ "${MODEL}"=="EuroParlEng" ]; then
 
 	COND_TEXTS=""
 

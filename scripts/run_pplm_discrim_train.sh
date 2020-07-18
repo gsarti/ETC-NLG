@@ -16,22 +16,30 @@ DISCRIM_EPOCHS=10
 #################	
 
 source ../venv/bin/activate
-python3 preprocess_pplm_data.py --labels=$LABELS --model=$MODEL \
-		--max_sentence_length=$DISCRIM_BLOCK_SIZE
 
 TESTS="../tests/${MODEL}"
-export DATASET="${TESTS}/datasets/${MODEL}_${LABELS}_${DISCRIM_BLOCK_SIZE}.csv"
+DATASET="${TESTS}/datasets/${MODEL}_${LABELS}_${DISCRIM_BLOCK_SIZE}.csv"
+
+if [ ! -f "${DATASET}" ]; then
+	python3 preprocess_pplm_data.py --labels=$LABELS --model=$MODEL \
+			--max_sentence_length=$DISCRIM_BLOCK_SIZE
+fi
+
+export DATASET="${DATASET}"
 LM_NAME="${TESTS}/fine_tuned_LM_blockSize=${LM_BLOCK_SIZE}_ep=${LM_EPOCHS}"
 SAVEDIR="${LM_NAME}/discriminator_ep=${DISCRIM_EPOCHS}_${LABELS}_${DISCRIM_BLOCK_SIZE}/"
 OUT="${SAVEDIR}/discrim_out.txt"
 
 if [ "${MODEL}"=="Svevo" ]; then 
+
 	EXAMPLE_SENTENCE="Tanto puro che talvolta dubito veramente che si tratti d'amore perché io altrimenti non potrei consegnarti neppure questa carta."
 
 elif [ "${MODEL}"=="EuroParlIta" ]; then
+
 	EXAMPLE_SENTENCE=""
 
 elif [ "${MODEL}"=="EuroParlEng" ]; then
+	
 	EXAMPLE_SENTENCE=""
 fi
 
