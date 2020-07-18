@@ -118,6 +118,10 @@ python scripts/label_unpreprocessed.py \
 - `SAMPLES` is the number of sentences produced by a Plug and Play model for each conditioning class and conditioning input
 - `ITERS` is the number of iterations of Plug and Play model through the conditioned text
 
+**Additional options**
+- pass `--no_cuda` flag to execute on CPU
+- pass `--uncond` instead of `--cond_text` to `run_pplm.py` for generating strings without prefix 
+
 
 ### Scripts outputs
 
