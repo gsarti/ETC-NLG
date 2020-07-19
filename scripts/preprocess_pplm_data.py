@@ -8,17 +8,34 @@ import csv as csv_lib
 from sklearn import preprocessing
 import pandas as pd
 import argparse
+import re
 
 DATA = "../data/"
 TESTS = "../tests/"
 
+def _split_punctuation(string, max_sentence_length, return_all_splits, sep=" "):
 
-def _split_string(str, max_sentence_length, return_all_splits, sep=" "):
-    words = str.split()
+    def split_keep(string, sep):
+        return re.findall('[^'+sep+']+'+sep+'|[^'+sep+']+', string)
+    
+    if max(map(len, string.split())) > max_sentence_length:
+            raise ValueError("limit is too small")
 
-    if max(map(len, words)) > max_sentence_length:
-        raise ValueError("limit is too small")
-    res, part, others = [], words[0], words[1:]
+    split_string = []
+    for sentence in split_keep(string, "."):
+        if sentence:
+            for subsentence in split_keep(sentence,","):
+                if subsentence:
+                    split_string.append(subsentence)
+                else:
+                    split_string.append(sentence)
+        else:
+            split_string = string.split()
+
+    res = []
+    part = split_string[0]
+    others = split_string[1:]
+    sep=" "
     for word in others:
         if len(sep)+len(word) > max_sentence_length-len(part):
             res.append(part)
@@ -30,6 +47,23 @@ def _split_string(str, max_sentence_length, return_all_splits, sep=" "):
 
     return res if return_all_splits else [res[0]]
 
+# def _split_string(string, max_sentence_length, return_all_splits, sep=" "):
+#     words = string.split()
+
+#     if max(map(len, words)) > max_sentence_length:
+#         raise ValueError("limit is too small")
+#     res, part, others = [], words[0], words[1:]
+#     for word in others:
+#         if len(sep)+len(word) > max_sentence_length-len(part):
+#             res.append(part)
+#             part = word
+#         else:
+#             part += sep+word
+#     if part:
+#         res.append(part)
+
+#     return res if return_all_splits else [res[0]]
+
 
 def _cut_sentences_df(df, labeled, max_sentence_length, return_all_splits):
 
@@ -37,16 +71,17 @@ def _cut_sentences_df(df, labeled, max_sentence_length, return_all_splits):
 
         cut_sentences = [{"label":row["label"], "text": cut_sentence}
                             for idx, row in df.iterrows()
-                            for cut_sentence in _split_string(str=row["text"], 
+                            for cut_sentence in _split_punctuation(string=row["text"], 
                             max_sentence_length=max_sentence_length, 
                             return_all_splits=return_all_splits)]
 
     else:   
         cut_sentences = [{"text": cut_sentence}
                             for idx, row in df.iterrows()
-                            for cut_sentence in _split_string(str=row["text"], 
+                            for cut_sentence in _split_punctuation(string=row["text"], 
                             max_sentence_length=max_sentence_length, 
-                            return_all_splits=return_all_splits)]
+                            return_all_splits=return_all_splits)
+                           ]
 
     cut_df = pd.DataFrame(cut_sentences)
     return cut_df
@@ -146,6 +181,7 @@ def load_data(model, max_sentence_length, labels):
             europarl = open('../data/europarl-v7.it-en.it', encoding='utf-8')\
                             .read().split('\n')
             europarl = list(filter(None, europarl))
+            europarl = [sentence for sentence in europarl if len(sentence)>8]
             df = pd.DataFrame(europarl, columns=["text"])
 
     elif model=="EuroParlEng":
@@ -155,6 +191,7 @@ def load_data(model, max_sentence_length, labels):
             europarl = open('../data/europarl-v7.it-en.en', encoding='utf-8')\
                             .read().split('\n')
             europarl = list(filter(None, europarl))
+            europarl = [sentence for sentence in europarl if len(sentence)>8]
             df = pd.DataFrame(europarl, columns=["text"])
 
     return df
