@@ -4,7 +4,7 @@
 # settings #
 ############
 
-MODEL="Svevo" # Svevo, EuroParlIta, EuroParlEng
+MODEL="EuroParlEng" # Svevo, EuroParlIta, EuroParlEng
 LM_BLOCK_SIZE=128
 LM_EPOCHS=2
 
@@ -23,6 +23,8 @@ if [ ! -f "${TRAIN_FILE}" ]; then
     		--max_sentence_length=$LM_BLOCK_SIZE
 fi
 
+export TRAIN_FILE="${TRAIN_FILE}"
+export TEST_FILE="${TEST_FILE}"
 
 if [ "${MODEL}"=="Svevo" ] ; then
 
@@ -38,8 +40,6 @@ elif [ "${MODEL}"=="EuroParlEng" ]; then
 
 fi
 
-export TRAIN_FILE="${TRAIN_FILE}"
-export TEST_FILE="${TEST_FILE}"
 OUT_DIR="${TESTS}/fine_tuned_LM_blockSize=${LM_BLOCK_SIZE}_ep=${LM_EPOCHS}"
 OUT="${OUT_DIR}/lm_fine_tuning_out.txt"
 
@@ -50,7 +50,7 @@ python3 transformers/run_language_modeling.py \
     --do_train --train_data_file=$TRAIN_FILE \
     --do_eval --eval_data_file=$TEST_FILE \
     --block_size=$LM_BLOCK_SIZE --save_steps=1000 --save_total_limit=1 \
-    --overwrite_output_dir --epochs=$LM_EPOCHS > $OUT
+    --overwrite_output_dir --epochs=$LM_EPOCHS > $OUT 2>&1
     # --no_cuda 
 
 deactivate

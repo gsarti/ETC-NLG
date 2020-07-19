@@ -30,11 +30,11 @@ if [ "${MODEL}"=="Svevo" ] ; then
 
 elif [ "${MODEL}"=="EuroParlIta" ]; then
 
-	COND_TEXTS=""
+	COND_TEXTS="Dato il,Si dovrebbe,Penso che,In questo"
 
 elif [ "${MODEL}"=="EuroParlEng" ]; then
 
-	COND_TEXTS=""
+	COND_TEXTS="It is,I would,You did,In this"
 
 fi
 

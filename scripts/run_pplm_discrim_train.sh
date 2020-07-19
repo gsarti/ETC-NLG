@@ -4,7 +4,7 @@
 # settings #
 ############
 
-MODEL="Svevo" # Svevo, EuroParlIta, EuroParlEng
+MODEL="EuroParlEng" # Svevo, EuroParlIta, EuroParlEng
 LABELS="gold" # gold, contextual, combined
 LM_BLOCK_SIZE=128
 LM_EPOCHS=2
@@ -36,11 +36,11 @@ if [ "${MODEL}"=="Svevo" ]; then
 
 elif [ "${MODEL}"=="EuroParlIta" ]; then
 
-	EXAMPLE_SENTENCE=""
+	EXAMPLE_SENTENCE="Tutto ciò è importante, ma altrettanto essenziale è l'attuazione delle norme vigenti."
 
 elif [ "${MODEL}"=="EuroParlEng" ]; then
 	
-	EXAMPLE_SENTENCE=""
+	EXAMPLE_SENTENCE="It seems absolutely disgraceful that we pass legislation and do not adhere to it ourselves."
 fi
 
 mkdir -p $SAVEDIR
