@@ -26,15 +26,15 @@ fi
 export TRAIN_FILE="${TRAIN_FILE}"
 export TEST_FILE="${TEST_FILE}"
 
-if [ "${MODEL}"=="Svevo" ] ; then
+if [ "${MODEL}" == "Svevo" ] ; then
 
 	BASE_LM_NAME="LorenzoDeMattei/GePpeTto"
 
-elif [ "${MODEL}"=="EuroParlIta" ]; then
+elif [ "${MODEL}" == "EuroParlIta" ]; then
 
 	BASE_LM_NAME="LorenzoDeMattei/GePpeTto"
 
-elif [ "${MODEL}"=="EuroParlEng" ]; then
+elif [ "${MODEL}" == "EuroParlEng" ]; then
 
 	BASE_LM_NAME="gpt2-medium"
 
