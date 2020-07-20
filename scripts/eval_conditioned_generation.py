@@ -8,6 +8,7 @@ import logging
 import argparse
 import spacy
 import pandas as pd
+import numpy as np
 from sklearn.metrics import confusion_matrix
 
 sys.path.append(os.getcwd())
@@ -44,7 +45,7 @@ def main(args):
     gen_data["class_pred"] = ["|".join(topics[i]) for i in best_topics]
     lab, pred = gen_data["class_label"], gen_data["class_pred"]
     cm_labs = list(set(lab) | set(pred))
-    logger.info("Confusion matrix: f{confusion_matrix(lab, pred, labels=cm_labs)}")
+    logger.info(f"Confusion matrix: {confusion_matrix(lab, pred, labels=cm_labs)}")
     gen_data.to_csv(f'{args.gen_text_path.split(".")[0]}_predicted.csv')
 
 if __name__ == "__main__":
