@@ -580,6 +580,7 @@ def set_generic_model_params(discrim_weights, discrim_meta):
     # return discr_params
 
 def run_pplm_example(
+    model,
     pretrained_model="gpt2-medium",
     cond_text="",
     uncond=False,
@@ -606,7 +607,7 @@ def run_pplm_example(
     no_cuda=False,
     colorama=False,
     repetition_penalty=1.0,
-    savedir="../tests/"
+    savedir="../tests/",
 ):
     # set Random seed
     torch.manual_seed(seed)
@@ -727,6 +728,40 @@ def run_pplm_example(
 
     return pert_texts
 
+def _get_class_labels(model, class_label):
+
+    if model=="Svevo":
+
+        if class_label=="gold":
+            return ["FAMIGLIA","LIVIA","VIAGGI","SALUTE", "LETTERATURA","LAVORO"]
+
+        elif class_label=="contextual":
+            return ["decembre|tribel|raffreddore|debole|capanna",
+                    "notte|mattina|piccolo|sera|olga",
+                    "notte|piccolo|mattina|olga|sera",
+                    "raffreddore|fatturare|anonimo|earl|scell",
+                    "scell|halperson|roncegno|finito|scala",
+                    "senilità|devotissimo|joyce|amicare|carissimo"]
+        
+        elif class_label=="combined":
+            return ["cartone|capacità|grossissima|pazzo|schopenhauer",
+                      "cartone|capacità|grossissima|saggiare|pazzo",
+                      "fabbricare|domenica|marcare|macchina|caldo",
+                      "murare|gilda|dimenticato|sabato|arco",
+                      "senilità|amicare|devotissimo|editore|parigi",
+                      "titina|vero|olga|bisognare|viaggiare"]
+
+    # elif model=="EuroParl":
+    #     if class_label=="gold":
+    #         return 
+    #     elif class_label=="contextual":
+    #         return
+    #     elif class_label=="combined":
+    #         return
+    else: 
+        raise NotImplementedError()
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -797,38 +832,47 @@ if __name__ == "__main__":
         "--repetition_penalty", type=float, default=1.0, help="Penalize repetition. More than 1.0 -> less repetition",
     )
     parser.add_argument("--savedir", type=str)
+    parser.add_argument("--model", type=str)
     args = parser.parse_args()
+
+    class_label_list = _get_class_labels(args.model, args.class_label)
+    # print("\nClass labels:", class_label_list)
 
     if args.uncond:
 
-        class_label_list=list(map(str, args.class_label.strip('()').split(',')))
+        # class_label_list=list(map(str, args.class_label.strip('()').split(',')))
 
-        df = pandas.DataFrame(columns=["perturbed_gen_text", "class_label"])
+        df = pandas.DataFrame(columns=["cond_text", "perturbed_gen_text", "class_label"])
 
         rows_count=0
 
         for class_label in class_label_list:
-    
+        
             args.class_label=class_label
             generated_texts = run_pplm_example(**vars(args)) 
 
             for pert_gen_text in generated_texts:
 
-                df.loc[rows_count] = pandas.Series({"perturbed_gen_text":pert_gen_text, 
+                df.loc[rows_count] = pandas.Series({"cond_text":"<|endoftext|>",
+                                                    "perturbed_gen_text":pert_gen_text, 
                                                     "class_label":class_label})
                 rows_count+=1
 
         os.makedirs(os.path.dirname(args.savedir), exist_ok=True)
-        df.to_csv(args.savedir+"/perturbed_generated_text.csv", 
+        df.to_csv(args.savedir+"/generated_text_samples="\
+                    +str(args.num_samples)+".csv", 
                   index=False, header=True)
 
 
     else:
 
-        cond_text_list=list(map(str, args.cond_text.strip('()').split(',')))
-        class_label_list=list(map(str, args.class_label.strip('()').split(',')))
+        filename="/generated_text_labels="+str(args.class_label)\
+        +"_samples="+str(args.num_samples)+".csv"
 
-        df = pandas.DataFrame(columns=["perturbed_gen_text", "class_label"])
+        cond_text_list=list(map(str, args.cond_text.strip('()').split(',')))
+        # class_label_list=list(map(str, args.class_label.strip('()').split(',')))
+
+        df = pandas.DataFrame(columns=["cond_text", "perturbed_gen_text", "class_label"])
 
         rows_count=0
         for class_label in class_label_list:
@@ -837,16 +881,18 @@ if __name__ == "__main__":
 
                 args.cond_text=cond_text
                 args.class_label=class_label
+  
                 generated_texts = run_pplm_example(**vars(args)) 
 
                 for pert_gen_text in generated_texts:
 
-                    df.loc[rows_count] = pandas.Series({"perturbed_gen_text":pert_gen_text, 
+                    df.loc[rows_count] = pandas.Series({"cond_text":cond_text,
+                                                        "perturbed_gen_text":pert_gen_text, 
                                                         "class_label":class_label})
                     rows_count+=1
 
+
         os.makedirs(os.path.dirname(args.savedir), exist_ok=True)
-        df.to_csv(args.savedir+"/perturbed_generated_text.csv", 
-                  index=False, header=True)
+        df.to_csv(args.savedir+filename, index=False, header=True)
 
 

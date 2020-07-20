@@ -38,8 +38,7 @@ from transformers import AutoTokenizer, AutoModelWithLMHead, pipeline
 torch.manual_seed(0)
 np.random.seed(0)
 EPSILON = 1e-10
-example_sentence = "Tanto puro che talvolta dubito veramente che si tratti d'amore perché io altrimenti non potrei consegnarti neppure questa carta."
-max_length_seq = 1000
+max_length_seq = 1500
 
 
 class Discriminator(torch.nn.Module):
@@ -49,12 +48,11 @@ class Discriminator(torch.nn.Module):
         super().__init__()
         self.tokenizer = GPT2Tokenizer.from_pretrained(pretrained_model)
         self.encoder = GPT2LMHeadModel.from_pretrained(pretrained_model)
-        # self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
-        # self.encoder = AutoModelWithLMHead.from_pretrained(pretrained_model)
         self.embed_size = self.encoder.transformer.config.hidden_size
         self.classifier_head = ClassificationHead(class_size=class_size, embed_size=self.embed_size)
         self.cached_mode = cached_mode
         self.device = device
+        print("\nEmbedding size =",self.embed_size)
 
     def get_classifier(self):
         return self.classifier_head
@@ -101,8 +99,8 @@ class Dataset(data.Dataset):
     def __getitem__(self, index):
         """Returns one data pair (source and target)."""
         data = {}
-        data["X"] = self.X[index]
-        data["y"] = self.y[index]
+        data["text"] = self.X[index]
+        data["label"] = self.y[index]
         return data
 
 
@@ -122,8 +120,8 @@ def collate_fn(data):
     for key in data[0].keys():
         item_info[key] = [d[key] for d in data]
 
-    x_batch, _ = pad_sequences(item_info["X"])
-    y_batch = torch.tensor(item_info["y"], dtype=torch.long)
+    x_batch, _ = pad_sequences(item_info["text"])
+    y_batch = torch.tensor(item_info["label"], dtype=torch.long)
 
     return x_batch, y_batch
 
@@ -133,8 +131,8 @@ def cached_collate_fn(data):
     for key in data[0].keys():
         item_info[key] = [d[key] for d in data]
 
-    x_batch = torch.cat(item_info["X"], 0)
-    y_batch = torch.tensor(item_info["y"], dtype=torch.long)
+    x_batch = torch.cat(item_info["text"], 0)
+    y_batch = torch.tensor(item_info["label"], dtype=torch.long)
 
     return x_batch, y_batch
 
@@ -142,6 +140,7 @@ def cached_collate_fn(data):
 def train_epoch(data_loader, discriminator, optimizer, epoch=0, log_interval=10, device="cpu"):
     samples_so_far = 0
     discriminator.train_custom()
+
     for batch_idx, (input_t, target_t) in enumerate(data_loader):
         input_t, target_t = input_t.to(device), target_t.to(device)
 
@@ -152,6 +151,7 @@ def train_epoch(data_loader, discriminator, optimizer, epoch=0, log_interval=10,
         loss.backward(retain_graph=True)
         optimizer.step()
 
+        pred_t = output_t.argmax(dim=1, keepdim=True)
         samples_so_far += len(input_t)
 
         if batch_idx % log_interval == 0:
@@ -226,6 +226,7 @@ def get_cached_data_loader(dataset, batch_size, discriminator, shuffle=False, de
 
 def train_discriminator(
     dataset,
+    example_sentence,
     dataset_fp=None,
     pretrained_model="gpt2-medium",
     epochs=10,
@@ -463,7 +464,9 @@ def train_discriminator(
         with open(savedir+"{}_classifier_head_meta.json".format(dataset), "w") as meta_file:
             json.dump(discriminator_meta, meta_file)
 
-    optimizer = optim.Adam(discriminator.parameters(), lr=0.001)
+    optimizer = optim.Adam(discriminator.parameters(), lr=0.0001)
+
+    print(f"Training on {len(train_loader.dataset)} sentences")
 
     for epoch in range(epochs):
         start = time.time()
@@ -507,6 +510,7 @@ if __name__ == "__main__":
         "In case of generic, the dataset is expected"
         "to be a csv file with structure: class \t text",
     )
+    parser.add_argument("--example_sentence", type=str)
     parser.add_argument(
         "--dataset_fp",
         type=str,

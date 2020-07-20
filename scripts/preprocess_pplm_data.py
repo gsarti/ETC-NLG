@@ -7,17 +7,35 @@ import random
 import csv as csv_lib
 from sklearn import preprocessing
 import pandas as pd
-
+import argparse
+import re
 
 DATA = "../data/"
 TESTS = "../tests/"
 
+def _split_punctuation(string, max_sentence_length, return_all_splits, sep=" "):
 
-def _split_string(str, max_sentence_length, return_all_splits, sep=" "):
-    words = str.split()
-    if max(map(len, words)) > max_sentence_length:
-        raise ValueError("limit is too small")
-    res, part, others = [], words[0], words[1:]
+    def split_keep(string, sep):
+        return re.findall('[^'+sep+']+'+sep+'|[^'+sep+']+', string)
+    
+    if max(map(len, string.split())) > max_sentence_length:
+            raise ValueError("limit is too small")
+
+    split_string = []
+    for sentence in split_keep(string, "."):
+        if sentence:
+            for subsentence in split_keep(sentence,","):
+                if subsentence:
+                    split_string.append(subsentence)
+                else:
+                    split_string.append(sentence)
+        else:
+            split_string = string.split()
+
+    res = []
+    part = split_string[0]
+    others = split_string[1:]
+    sep=" "
     for word in others:
         if len(sep)+len(word) > max_sentence_length-len(part):
             res.append(part)
@@ -29,68 +47,95 @@ def _split_string(str, max_sentence_length, return_all_splits, sep=" "):
 
     return res if return_all_splits else [res[0]]
 
-def _cut_sentences(labeled_df, max_sentence_length, return_all_splits):
+# def _split_string(string, max_sentence_length, return_all_splits, sep=" "):
+#     words = string.split()
 
-    cut_sentences = [{"label":row["label"], "text": cut_sentence}
-                        for idx, row in labeled_df.iterrows()
-                        for cut_sentence in _split_string(str=row["text"], 
-                        max_sentence_length=max_sentence_length, 
-                        return_all_splits=return_all_splits)]
+#     if max(map(len, words)) > max_sentence_length:
+#         raise ValueError("limit is too small")
+#     res, part, others = [], words[0], words[1:]
+#     for word in others:
+#         if len(sep)+len(word) > max_sentence_length-len(part):
+#             res.append(part)
+#             part = word
+#         else:
+#             part += sep+word
+#     if part:
+#         res.append(part)
+
+#     return res if return_all_splits else [res[0]]
+
+
+def _cut_sentences_df(df, labeled, max_sentence_length, return_all_splits):
+
+    if labeled:
+
+        cut_sentences = [{"label":row["label"], "text": cut_sentence}
+                            for idx, row in df.iterrows()
+                            for cut_sentence in _split_punctuation(string=row["text"], 
+                            max_sentence_length=max_sentence_length, 
+                            return_all_splits=return_all_splits)]
+
+    else:   
+        cut_sentences = [{"text": cut_sentence}
+                            for idx, row in df.iterrows()
+                            for cut_sentence in _split_punctuation(string=row["text"], 
+                            max_sentence_length=max_sentence_length, 
+                            return_all_splits=return_all_splits)
+                           ]
 
     cut_df = pd.DataFrame(cut_sentences)
-
-    print(cut_df.head())
-    print("\nUnique labels:\n", np.unique(cut_df[["label"]]))
     return cut_df
 
-def _build_labeled_df(df, dataset):
+def _build_labeled_df(df, model, labels):
 
-    if dataset == "gold":
+    if model == "Svevo":
 
-        # renaming cols
-        df.columns=['TESTO', 'ID', 'DESTINATARIO', 'LUOGO', 'DATA', 'SALUTO_APERTURA ',
-                'FORMULA_APERTURA', 'SALUTO_CHIUSURA', 'FORMULA_CHIUSURA', 'FAMIGLIA',
-                'FAMIGLIA_AMORE_PER_LIVIA', 'FAMIGLIA_GELOSIA_PER_LIVIA', 'FAM_SOLDI',
-                'VIAGGI', 'SALUTE', 'SALUTE_FUMO', 'LETTERATURA', 'LAVORO',
-                'LETT_SCRITTURA', 'PAROLE_FAMIGLIA', 'PAROLE_VIAGGI', 'PAROLE_SALUTE',
-                'PAROLE_LETTERATURA', 'PAROLE_LAVORO']
+        if labels == "gold":
 
-        classes = ['FAMIGLIA', 'FAMIGLIA_AMORE_PER_LIVIA', 'FAMIGLIA_GELOSIA_PER_LIVIA', 
-                   'FAM_SOLDI', 'VIAGGI', 'SALUTE', 'SALUTE_FUMO', 'LETTERATURA', 'LAVORO',
-                   'LETT_SCRITTURA']
+            # renaming cols
+            df.columns=['TESTO', 'ID', 'DESTINATARIO', 'LUOGO', 'DATA', 'SALUTO_APERTURA ',
+                    'FORMULA_APERTURA', 'SALUTO_CHIUSURA', 'FORMULA_CHIUSURA', 'FAMIGLIA',
+                    'FAMIGLIA_AMORE_PER_LIVIA', 'FAMIGLIA_GELOSIA_PER_LIVIA', 'FAM_SOLDI',
+                    'VIAGGI', 'SALUTE', 'SALUTE_FUMO', 'LETTERATURA', 'LAVORO',
+                    'LETT_SCRITTURA', 'PAROLE_FAMIGLIA', 'PAROLE_VIAGGI', 'PAROLE_SALUTE',
+                    'PAROLE_LETTERATURA', 'PAROLE_LAVORO']
 
-        new_classes = ['FAMIGLIA', 'LIVIA', 'VIAGGI', 'SALUTE', 'LETTERATURA', 'LAVORO']
+            classes = ['FAMIGLIA', 'FAMIGLIA_AMORE_PER_LIVIA', 'FAMIGLIA_GELOSIA_PER_LIVIA', 
+                       'FAM_SOLDI', 'VIAGGI', 'SALUTE', 'SALUTE_FUMO', 'LETTERATURA', 'LAVORO',
+                       'LETT_SCRITTURA']
 
-        # merge classes
-        df.fillna(0., inplace=True)
-        df['LIVIA'] = df['FAMIGLIA_AMORE_PER_LIVIA'] + df['FAMIGLIA_GELOSIA_PER_LIVIA']
-        df['SALUTE'] = df['SALUTE'] + df['SALUTE_FUMO']
-        df['LETTERATURA'] = df['LETTERATURA'] + df['LETT_SCRITTURA']
+            new_classes = ['FAMIGLIA', 'LIVIA', 'VIAGGI', 'SALUTE', 'LETTERATURA', 'LAVORO']
 
-        labeled_text = [{"label":class_name, "text":row["TESTO"]} 
-                         for idx, row in df.iterrows()
-                         for class_idx, class_name in enumerate(new_classes)
-                         if row[class_name]>=1]
+            # merge classes
+            df.fillna(0., inplace=True)
+            df['LIVIA'] = df['FAMIGLIA_AMORE_PER_LIVIA'] + df['FAMIGLIA_GELOSIA_PER_LIVIA']
+            df['SALUTE'] = df['SALUTE'] + df['SALUTE_FUMO']
+            df['LETTERATURA'] = df['LETTERATURA'] + df['LETT_SCRITTURA']
 
-        labeled_df = pd.DataFrame(labeled_text)
+            labeled_text = [{"label":class_name, "text":row["TESTO"]} 
+                             for idx, row in df.iterrows()
+                             for class_idx, class_name in enumerate(new_classes)
+                             if row[class_name]>=1]
 
-        print(labeled_df.groupby("label").agg(['count']))
+        elif labels == "contextual" or labels == "combined":
 
-    elif dataset == "contextual" or dataset == "combined":
+            classes = list(np.unique(df[["best_topic"]]))
 
-        classes = list(np.unique(df[["best_topic"]]))
+            labeled_text = [{"label":class_name, "text":row["unpreproc_text"]} 
+                             for idx, row in df.iterrows()
+                             for class_idx, class_name in enumerate(classes)
+                             if row[class_name]>=0.6]
+      
+    elif model == "EuroParlIta" or model == "EuroParlEng":
 
-        labeled_text = [{"label":class_name, "text":row["unpreproc_text"]} 
-                         for idx, row in df.iterrows()
-                         for class_idx, class_name in enumerate(classes)
-                         if row[class_name]>=0.6]
-
-        labeled_df = pd.DataFrame(labeled_text)
-
-        print(labeled_df.groupby("label").agg(['count']))
+        raise NotImplementedError()
 
     else:
         raise NotImplementedError()
+
+    labeled_df = pd.DataFrame(labeled_text, columns=["label","text"])
+
+    print(labeled_df.groupby("label").agg(['count']))
 
     return labeled_df
 
@@ -112,40 +157,97 @@ def _save_df(df, csv, txt, filepath, filename):
         f.close()
 
 
-def preprocess_labeled_data(dataset):
-    random.seed(0)
+def load_data(model, max_sentence_length, labels):
 
-    if dataset == "gold":
+    if model=="Svevo":
+    
+        if labels == "unlabeled":
 
-        df = pandas.read_excel(DATA+"classificazione_lettere.xlsx")
+            df = pandas.read_excel(DATA+"classificazione_lettere.xlsx")[["TESTO"]]
+            df.columns = ["text"]
 
-    elif dataset == "contextual" or dataset == "combined":
+        elif labels == "gold":
 
-        df = pandas.read_csv(DATA+"topic_annotated_svevo_"+dataset+".tsv", sep="\t")
+            df = pandas.read_excel(DATA+"classificazione_lettere.xlsx")
 
-    else:
-        raise NotImplementedError()
+        elif labels == "contextual" or labels == "combined":
 
-    labeled_df = _build_labeled_df(df, dataset)
+            df = pandas.read_csv(DATA+"topic_annotated_svevo_"+labels+".tsv", sep="\t")
 
-    # train test split
-    msk = np.random.rand(len(labeled_df)) < 0.8
-    train = labeled_df[msk]
-    test = labeled_df[~msk]
+    elif model=="EuroParlIta":
 
-    # cut sentences for discrim training
-    cut_full = _cut_sentences(labeled_df, max_sentence_length=1000, return_all_splits=False)
+        if labels == "unlabeled":
+            
+            europarl = open('../data/europarl-v7.it-en.it', encoding='utf-8')\
+                            .read().split('\n')
+            europarl = list(filter(None, europarl))
+            europarl = [sentence for sentence in europarl if len(sentence)>8]
+            df = pd.DataFrame(europarl, columns=["text"])
 
-    filepath=TESTS+"Svevo_"+str(dataset)+"/"
-    filename="Svevo_"+str(dataset)
+    elif model=="EuroParlEng":
 
-    ### txt files for LM fine tuning
-    _save_df(train, csv=False, txt=True, filepath=filepath, filename=filename+"_train")
-    _save_df(test, csv=False, txt=True, filepath=filepath, filename=filename+"_test")
+        if labels == "unlabeled":
+            
+            europarl = open('../data/europarl-v7.it-en.en', encoding='utf-8')\
+                            .read().split('\n')
+            europarl = list(filter(None, europarl))
+            europarl = [sentence for sentence in europarl if len(sentence)>8]
+            df = pd.DataFrame(europarl, columns=["text"])
 
-    ### csv files for PPLM discrim training
-    _save_df(cut_full, csv=True, txt=False, filepath=filepath, filename=filename+"_full")
+    return df
 
 
-preprocess_labeled_data(dataset="combined")
+def preprocess_data(df, model, max_sentence_length, labels):
 
+    if labels == "unlabeled": ### txt files for LM fine tuning
+
+        print("\n== Preprocessing unlabeled dataset ==")
+
+        random.seed(0)
+        msk = np.random.rand(len(df)) < 0.8
+        train = df[msk]
+        test = df[~msk]
+
+        filepath, filename = (TESTS+model+"/datasets/","unlabeled_"+model)
+
+        cut_train = _cut_sentences_df(train, labeled=False, 
+            max_sentence_length=max_sentence_length, return_all_splits=True)
+        cut_test = _cut_sentences_df(test, labeled=False, 
+            max_sentence_length=max_sentence_length, return_all_splits=True)
+
+        _save_df(cut_train, csv=False, txt=True, filepath=filepath, 
+            filename=filename+"_train_"+str(max_sentence_length))
+        _save_df(cut_test, csv=False, txt=True, filepath=filepath,
+            filename=filename+"_test_"+str(max_sentence_length))
+
+        print(cut_train.head())
+
+    else: ### csv files for PPLM discrim training
+
+        print("\n== Preprocessing labeled dataset", labels," ==")
+
+        labeled_df = _build_labeled_df(df, model, labels)
+
+        # cut sentences for discrim training
+        cut_full = _cut_sentences_df(labeled_df, labeled=True, 
+            max_sentence_length=max_sentence_length, return_all_splits=False)
+
+        filepath, filename = (TESTS+model+"/datasets/", model+"_"+str(labels))
+        
+        _save_df(cut_full, csv=True, txt=False, filepath=filepath, 
+            filename=filename+"_"+str(max_sentence_length))
+
+def main(args):
+
+    df = load_data(args.model, args.max_sentence_length, args.labels)
+    preprocess_data(df, args.model, args.max_sentence_length, args.labels)
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, default="Svevo")
+    parser.add_argument("--max_sentence_length", type=int, default=128)
+    parser.add_argument("--labels", type=str, default="unlabeled")
+    args = parser.parse_args()
+    main(args)
