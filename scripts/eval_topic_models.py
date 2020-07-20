@@ -9,8 +9,6 @@ from shutil import rmtree
 from prettytable import PrettyTable
 from tqdm import tqdm
 
-from contextualized_topic_models.datasets.dataset import CTMDataset
-from contextualized_topic_models.utils.data_preparation import TextHandler
 from contextualized_topic_models.evaluation.measures import (
     TopicDiversity,
     CoherenceNPMI,
@@ -21,7 +19,7 @@ sys.path.append(os.getcwd())
 
 from sentence_transformers import SentenceTransformer
 from scripts.sent_transformers import CamemBERT, RoBERTa, Pooling
-from scripts.custom_ctm import CustomCTM
+from scripts.custom_ctm import CustomCTM, CustomTextHandler, CustomCTMDataset
 
 PREPROC_TEXTS = 'data/preprocessed_svevo_texts.txt'
 UNPREPROC_TEXTS = 'data/unpreprocessed_svevo_texts.txt'
@@ -51,7 +49,7 @@ def embeddings_from_file(args):
 
 
 def main(args):
-    handler = TextHandler(args.preproc_path)
+    handler = CustomTextHandler(args.preproc_path)
     handler.prepare()
     train_embeds = embeddings_from_file(args)
     model_name = args.embed_model_name.split("/")[-1]
@@ -59,7 +57,7 @@ def main(args):
     with open(os.path.join(args.save_path, f"{data_name}_{model_name}"), 'wb') as f:
         pickle.dump(train_embeds, f)
         logger.info(f"Cached embeddings to {os.path.join(args.save_path, f'{data_name}_{model_name}')}")
-    train_data = CTMDataset(handler.bow, train_embeds, handler.idx2token)
+    train_data = CustomCTMDataset(handler.bow, train_embeds, handler.idx2token)
     x = PrettyTable()
     x.field_names = [
         "Inference Type", "# Topics", "TopicDiversity", "InvertedRBO", "CoherenceNPMI"

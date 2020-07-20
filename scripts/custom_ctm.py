@@ -1,12 +1,28 @@
 import os
 import torch
+import numpy as np
+import logging
 import multiprocessing as mp
 from contextualized_topic_models.models.ctm import CTM
+from contextualized_topic_models.utils.data_preparation import TextHandler
+from contextualized_topic_models.datasets.dataset import CTMDataset
+
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s %(name)s  %(message)s", datefmt="%d-%m-%y %H:%M:%S", level=logging.INFO,
+)
+
+logger = logging.getLogger(__name__)
 
 mode_dict = {
     "ContextualInferenceNetwork" : "contextual",
     "CombinedInferenceNetwork" : "combined"
 }
+
+
+def get_bag_of_words_nofilter(data, min_length):
+    vect = [np.bincount(x[x != np.array(None)].astype('int'), minlength=min_length) for x in data]
+    return np.array(vect)
+
 
 class CustomCTM(CTM):
     """ Change format of saved models to make it more sane """
@@ -33,3 +49,42 @@ class CustomCTM(CTM):
             with open(fileloc, 'wb') as file:
                 torch.save({'state_dict': self.model.state_dict(),
                             'dcue_dict': self.__dict__}, file)
+
+
+class CustomTextHandler(TextHandler):
+    """ Use bag of word without filtering out empty bags """
+    def prepare(self):
+        data = self.load_text_file()
+
+        concatenate_text = ""
+        for line in data:
+            line = line.strip()
+            concatenate_text += line + " "
+        concatenate_text = concatenate_text.strip()
+
+        self.vocab = list(set(concatenate_text.split()))
+
+        for index, vocab in list(zip(range(0, len(self.vocab)), self.vocab)):
+            self.vocab_dict[vocab] = index
+
+        self.index_dd = np.array(list(map(lambda y: np.array(list(map(lambda x:
+                                                                      self.vocab_dict[x], y.split()))), data)))
+        self.idx2token = {v: k for (k, v) in self.vocab_dict.items()}
+        self.bow = get_bag_of_words_nofilter(self.index_dd, len(self.vocab))
+
+
+class CustomCTMDataset(CTMDataset):
+    """ Add filtering for BOW and embeddings if BOW has only 0s """
+    def __init__(self, X, X_bert, idx2token, filter_empty_bow=True):
+        super(CustomCTMDataset, self).__init__(X, X_bert, idx2token)
+        if filter_empty_bow:
+            newX, newX_bert = [], []
+            for bow, embed in zip(X, X_bert):
+                if np.sum(bow) == 0:
+                    continue
+                newX.append(bow)
+                newX_bert.append(embed)
+            self.X = np.array(newX)
+            self.X_bert = np.array(newX_bert)
+            logger.info(f"Shape after filtering: {self.X.shape}, {self.X_bert.shape}")
+    

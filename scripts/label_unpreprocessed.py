@@ -7,15 +7,11 @@ import torch
 import numpy as np
 import pandas as pd
 
-from contextualized_topic_models.utils.data_preparation import TextHandler
-from contextualized_topic_models.utils.data_preparation import bert_embeddings_from_file
-from contextualized_topic_models.datasets.dataset import CTMDataset
-
 sys.path.append(os.getcwd())
 
 from sentence_transformers import SentenceTransformer
 from scripts.sent_transformers import CamemBERT, RoBERTa, Pooling
-from scripts.custom_ctm import CustomCTM
+from scripts.custom_ctm import CustomCTM, CustomTextHandler, CustomCTMDataset
 
 PREPROC_TEXTS = 'data/preprocessed_svevo_texts.txt'
 UNPREPROC_TEXTS = 'data/unpreprocessed_svevo_texts.txt'
@@ -67,12 +63,13 @@ def load_ctm(args):
 
 
 def main(args):
-    handler = TextHandler(args.preproc_path)
+    handler = CustomTextHandler(args.preproc_path)
     handler.prepare() # create vocabulary and training data
     with open(args.embeds_path, 'rb') as f:
         training_embeds = pickle.load(f)
-    training_dataset = CTMDataset(handler.bow, training_embeds, handler.idx2token)
+    training_dataset = CustomCTMDataset(handler.bow, training_embeds, handler.idx2token, filter_empty_bow=False)
     ctm = load_ctm(args)
+    logger.info(f"BOW-Embedding shape: {len(handler.bow), len(training_embeds)}")
     dist = ctm.get_thetas(training_dataset)
     logger.info(f"Thetas shape: ({len(dist)},{len(dist[0])})")
     with open(args.unpreproc_path) as f:
@@ -95,8 +92,6 @@ def main(args):
     df.to_csv(args.save_path, sep="\t")
     logger.info(f"Dataset saved to {args.save_path}") 
      
-        
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
