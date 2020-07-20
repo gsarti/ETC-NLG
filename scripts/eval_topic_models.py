@@ -36,22 +36,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def embeddings_from_file(args):
-    if args.language == "it":
-        we_model = CamemBERT(args.embed_model_name)
-    else:
-        we_model = RoBERTa(args.embed_model_name)
-    pooling = Pooling(we_model.get_word_embedding_dimension())
-    model = SentenceTransformer(modules=[we_model, pooling])
-    with open(args.unpreproc_path) as f:
-        train_text = list(map(lambda x: x, f.readlines()))
-        return np.array(model.encode(train_text))
-
-
 def main(args):
     handler = CustomTextHandler(args.preproc_path)
     handler.prepare()
-    train_embeds = embeddings_from_file(args)
+    train_embeds = embeddings_from_file(args.unpreproc_path, args.embed_model_name, args.language)
     model_name = args.embed_model_name.split("/")[-1]
     data_name = args.preproc_path.split("/")[-1].split(".")[0]
     with open(os.path.join(args.save_path, f"{data_name}_{model_name}"), 'wb') as f:

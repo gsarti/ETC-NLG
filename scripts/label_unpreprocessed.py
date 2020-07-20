@@ -11,7 +11,7 @@ sys.path.append(os.getcwd())
 
 from sentence_transformers import SentenceTransformer
 from scripts.sent_transformers import CamemBERT, RoBERTa, Pooling
-from scripts.custom_ctm import CustomCTM, CustomTextHandler, CustomCTMDataset
+from scripts.custom_ctm import get_ctm_and_data
 
 PREPROC_TEXTS = 'data/preprocessed_svevo_texts.txt'
 UNPREPROC_TEXTS = 'data/unpreprocessed_svevo_texts.txt'
@@ -29,48 +29,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def load_ctm(args):
-    model_file = os.path.join(args.model_dir, "dicts.pth")
-    with open(model_file, 'rb') as model_dict:
-        checkpoint = torch.load(model_dict)
-    ctm = CustomCTM(
-        input_size=checkpoint['dcue_dict']['input_size'],
-        bert_input_size=checkpoint['dcue_dict']['bert_size'],
-        inference_type=args.inference_type,
-        id_name=checkpoint['dcue_dict']['identifier'],
-        n_components=checkpoint['dcue_dict']['n_components'],
-        model_type=checkpoint['dcue_dict']['model_type'],
-        hidden_sizes=checkpoint['dcue_dict']['hidden_sizes'],
-        activation=checkpoint['dcue_dict']['activation'],
-        dropout=checkpoint['dcue_dict']['dropout'],
-        learn_priors=checkpoint['dcue_dict']['learn_priors'],
-        batch_size=checkpoint['dcue_dict']['batch_size'],
-        lr=checkpoint['dcue_dict']['lr'],
-        momentum=checkpoint['dcue_dict']['momentum'],
-        solver=checkpoint['dcue_dict']['solver'],
-        num_epochs=checkpoint['dcue_dict']['num_epochs'],
-        reduce_on_plateau=checkpoint['dcue_dict']['reduce_on_plateau'],
-        num_data_loader_workers=checkpoint['dcue_dict']['num_data_loader_workers'],
-    )
-    for (k, v) in checkpoint['dcue_dict'].items():
-        setattr(ctm, k, v)
-    ctm.model.load_state_dict(checkpoint['state_dict'])
-    topics = ctm.get_topic_lists()
-    logger.info(f"Loaded {args.inference_type} model at {model_file} with {len(topics)} topics. Showing first 10 topics:")
-    for i, topic in enumerate(topics[:10]):
-        logger.info(f"Topic {i}: {topic}")
-    return ctm
-
-
 def main(args):
-    handler = CustomTextHandler(args.preproc_path)
-    handler.prepare() # create vocabulary and training data
-    with open(args.embeds_path, 'rb') as f:
-        training_embeds = pickle.load(f)
-    training_dataset = CustomCTMDataset(handler.bow, training_embeds, handler.idx2token, filter_empty_bow=False)
-    ctm = load_ctm(args)
-    logger.info(f"BOW-Embedding shape: {len(handler.bow), len(training_embeds)}")
-    dist = ctm.get_thetas(training_dataset)
+    ctm, data = get_ctm_and_data(args.preproc_path, args.embeds_path, False, args.model_dir, args.inference_type)  
+    dist = ctm.get_thetas(data)
     logger.info(f"Thetas shape: ({len(dist)},{len(dist[0])})")
     with open(args.unpreproc_path) as f:
         text = f.read().splitlines()

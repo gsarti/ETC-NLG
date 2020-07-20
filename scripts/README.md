@@ -10,8 +10,8 @@ python scripts/preprocess.py
 
 # Preprocess the EuroParl corpora
 # We consider only the top 50'000 sentences
-# Corpus size: 1'909'115 sentences
-# Vocabulary size: EN = 27'250, IT = 31'305
+# Total Corpus size: 1'909'115 sentences
+# Total Vocabulary size: EN = 27'250, IT = 31'305
 python scripts/preprocess.py \
     --corpus_path data/europarl-v7.it-en.en \
     --out_preproc_path data/preprocessed_europarl_en.txt \
@@ -87,6 +87,8 @@ python scripts/label_unpreprocessed.py \
     --save_path data/topic_annotated_europarl_it_contextual.tsv \
     --inference_type contextual
 
+python scripts/eval_conditioned_generation.py \
+    --gen_text_path data/generated_text_labels=contextual_samples=3.csv
 ```
 
 ## Plug and Play Models
