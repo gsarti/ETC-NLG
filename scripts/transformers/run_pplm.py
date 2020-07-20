@@ -751,13 +751,39 @@ def _get_class_labels(model, class_label):
                       "senilità|amicare|devotissimo|editore|parigi",
                       "titina|vero|olga|bisognare|viaggiare"]
 
-    # elif model=="EuroParl":
-    #     if class_label=="gold":
-    #         return 
-    #     elif class_label=="contextual":
-    #         return
-    #     elif class_label=="combined":
-    #         return
+    elif model=="EuroParlIta":
+        if class_label=="contextual":
+            return ["produrre|cioccolato|produttore|consumatore|qualità",
+                    "nome|affare|ordine|presentare|onorevole",         
+                    "acqua|mare|pescare|rifiuto|inquinamento",
+                    "nn|accogliere|emendamento|lineare|motivare",
+                    "sperare|vertice|occasione|settimana|lisbona",
+                    "svolgere|chiuso|giovedì|indesiderato|intensivo",
+                    "ordine|venerdì|approvare|dichiarare|congiunto",
+                    "commissariare|carico|signora|patten|parola",
+                    "umano|fondamentale|libertà|diritto|carta",
+                    "carta|fondamentale|rispettare|valore|principiare"]
+
+        # elif class_label=="combined":
+        #     return 
+
+
+    elif model=="EuroParlEng":
+        if class_label=="contextual":
+             return ["congratulate|excellent|rapporteur|thank|congratulation"
+                     "state|member|national|small|large",
+                     "aid|child|food|world|people",
+                     "group|party|behalf|liberal|alliance",
+                     "market|euro|company|investment|service",
+                     "racism|xenophobia|violence|minority|ethnic",
+                     "animal|product|chocolate|fat|butter",
+                     "waste|water|transport|environment|environmental",
+                     "peace|process|negotiation|agreement|israel",
+                     "cut|nielson|reply|speaker|fischler"]
+                     
+        # elif class_label=="combined":
+        #     return
+
     else: 
         raise NotImplementedError()
 

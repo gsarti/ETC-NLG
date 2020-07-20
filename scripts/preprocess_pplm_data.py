@@ -13,12 +13,12 @@ import re
 DATA = "../data/"
 TESTS = "../tests/"
 
-def _split_punctuation(string, max_sentence_length, return_all_splits, sep=" "):
+def _split_with_punctuation(string, max_sentence_length, return_all_splits, sep=" "):
 
     def split_keep(string, sep):
         return re.findall('[^'+sep+']+'+sep+'|[^'+sep+']+', string)
     
-    if max(map(len, string.split())) > max_sentence_length:
+    if max_sentence_length < 8:
             raise ValueError("limit is too small")
 
     split_string = []
@@ -50,7 +50,7 @@ def _split_punctuation(string, max_sentence_length, return_all_splits, sep=" "):
 # def _split_string(string, max_sentence_length, return_all_splits, sep=" "):
 #     words = string.split()
 
-#     if max(map(len, words)) > max_sentence_length:
+#     if max_sentence_length < 8:
 #         raise ValueError("limit is too small")
 #     res, part, others = [], words[0], words[1:]
 #     for word in others:
@@ -71,14 +71,14 @@ def _cut_sentences_df(df, labeled, max_sentence_length, return_all_splits):
 
         cut_sentences = [{"label":row["label"], "text": cut_sentence}
                             for idx, row in df.iterrows()
-                            for cut_sentence in _split_punctuation(string=row["text"], 
+                            for cut_sentence in _split_with_punctuation(string=row["text"], 
                             max_sentence_length=max_sentence_length, 
                             return_all_splits=return_all_splits)]
 
     else:   
         cut_sentences = [{"text": cut_sentence}
                             for idx, row in df.iterrows()
-                            for cut_sentence in _split_punctuation(string=row["text"], 
+                            for cut_sentence in _split_with_punctuation(string=row["text"], 
                             max_sentence_length=max_sentence_length, 
                             return_all_splits=return_all_splits)
                            ]
@@ -88,9 +88,10 @@ def _cut_sentences_df(df, labeled, max_sentence_length, return_all_splits):
 
 def _build_labeled_df(df, model, labels):
 
-    if model == "Svevo":
 
-        if labels == "gold":
+    if labels == "gold":
+
+        if model == "Svevo":
 
             # renaming cols
             df.columns=['TESTO', 'ID', 'DESTINATARIO', 'LUOGO', 'DATA', 'SALUTO_APERTURA ',
@@ -117,27 +118,33 @@ def _build_labeled_df(df, model, labels):
                              for class_idx, class_name in enumerate(new_classes)
                              if row[class_name]>=1]
 
-        elif labels == "contextual" or labels == "combined":
+        elif model == "EuroParlIta" or model == "EuroParlEng":
 
-            classes = list(np.unique(df[["best_topic"]]))
+            raise NotImplementedError()
 
-            labeled_text = [{"label":class_name, "text":row["unpreproc_text"]} 
-                             for idx, row in df.iterrows()
-                             for class_idx, class_name in enumerate(classes)
-                             if row[class_name]>=0.6]
-      
-    elif model == "EuroParlIta" or model == "EuroParlEng":
+    elif labels == "contextual" or labels == "combined":
 
-        raise NotImplementedError()
+        unique_topics = np.unique(df[["best_topic"]])
+        classes = list(unique_topics)
 
+
+        labeled_text = [{"label":class_name, "text":row["unpreproc_text"]} 
+                         for idx, row in df.iterrows()
+                         for class_idx, class_name in enumerate(classes)
+                         if row[class_name]>=0.6]
+    
     else:
         raise NotImplementedError()
 
     labeled_df = pd.DataFrame(labeled_text, columns=["label","text"])
 
-    print(labeled_df.groupby("label").agg(['count']))
+    # select top k labels counts
+    labels_counts = labeled_df["label"].value_counts().nlargest(10)
+    top_labels = list(labels_counts.index)
+    top_labels_df = labeled_df[labeled_df['label'].isin(top_labels)]
+    print("\nTop labels counts:\n\n",labels_counts)
 
-    return labeled_df
+    return top_labels_df
 
 
 def _save_df(df, csv, txt, filepath, filename):
@@ -184,6 +191,12 @@ def load_data(model, max_sentence_length, labels):
             europarl = [sentence for sentence in europarl if len(sentence)>8]
             df = pd.DataFrame(europarl, columns=["text"])
 
+        elif labels == "contextual" or labels == "combined":
+
+            filename = "topic_annotated_europarl_it_"+labels+".tsv"
+            df = pandas.read_csv(DATA+filename, sep="\t")
+            df = df[df['unpreproc_text'].notna()]
+
     elif model=="EuroParlEng":
 
         if labels == "unlabeled":
@@ -193,6 +206,12 @@ def load_data(model, max_sentence_length, labels):
             europarl = list(filter(None, europarl))
             europarl = [sentence for sentence in europarl if len(sentence)>8]
             df = pd.DataFrame(europarl, columns=["text"])
+
+        elif labels == "contextual" or labels == "combined":
+
+            filename = "topic_annotated_europarl_en_"+labels+".tsv"
+            df = pandas.read_csv(DATA+filename, sep="\t")
+            df = df[df['unpreproc_text'].notna()]
 
     return df
 

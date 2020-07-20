@@ -4,8 +4,8 @@
 # settings #
 ############
 
-MODEL="Svevo" # Svevo, EuroParlIta, EuroParlEng
-LABELS="combined" # gold, contextual, combined
+MODEL="EuroParlEng" # Svevo, EuroParlIta, EuroParlEng
+LABELS="contextual" # gold (not available on Europarl), contextual, combined
 LM_BLOCK_SIZE=128
 LM_EPOCHS=2
 DISCRIM_BLOCK_SIZE=1500
@@ -24,15 +24,15 @@ DISCR_WEIGHTS="${DISCR_PATH}/generic_classifier_head.pt"
 OUT="${DISCR_PATH}/pplm_out.txt"
 SAVEDIR="${DISCR_PATH}/"
 
-if [ "${MODEL}"=="Svevo" ] ; then
+if [ "${MODEL}" == "Svevo" ] ; then
 
 	COND_TEXTS="Se potessi,Io sono,La tua,Un giorno"
 
-elif [ "${MODEL}"=="EuroParlIta" ]; then
+elif [ "${MODEL}" == "EuroParlIta" ]; then
 
 	COND_TEXTS="Dato il,Si dovrebbe,Penso che,In questo"
 
-elif [ "${MODEL}"=="EuroParlEng" ]; then
+elif [ "${MODEL}" == "EuroParlEng" ]; then
 
 	COND_TEXTS="It is,I would,You did,In this"
 

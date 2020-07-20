@@ -4,11 +4,12 @@
 # settings #
 ############
 
-MODEL="EuroParlIta" # Svevo, EuroParlIta, EuroParlEng
+MODEL="EuroParlEng" # Svevo, EuroParlIta, EuroParlEng
 LM_BLOCK_SIZE=128
 LM_EPOCHS=2
 LENGTH=100
-PROMPT="Se potessi"
+PROMPT="We should"
+SAMPLES=3
 
 ############
 # generate #
@@ -23,8 +24,8 @@ mkdir -p $TESTS
 
 python transformers/run_generation.py \
     --model_type=gpt2 --model_name_or_path=$MODEL_NAME \
-    --prompt="${PROMPT}" --length=$LENGTH --num_return_sequences=3 \
-    --repetition_penalty=1.2 --temperature=0.8 --k=5 #> $OUT
+    --prompt="${PROMPT}" --length=$LENGTH --num_return_sequences=$SAMPLES \
+    --repetition_penalty=1.5 --temperature=0.8 --k=10 #> $OUT
     # --no_cuda
 
 deactivate
