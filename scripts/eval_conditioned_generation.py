@@ -44,6 +44,15 @@ def main(args):
     dist = ctm.get_thetas(data)
     logger.info(f"Thetas shape: ({len(dist)},{len(dist[0])})")
     topics = ctm.get_topic_lists(5)
+    if args.do_cond_topics_only:
+        topic2idx = {}
+        form_topics = ["|".join(top) for top in topics]
+        for topic in pd.unique(gen_data['class_preds']):
+            topic2idx[topic] = form_topics.index(topic)
+        dist = dist[:,list(topic2idx.values())]
+        # Reweire topics wrt new indexing (naturally in growing order)
+        topics = [e[0].split("|") for e in sorted(topic2idx.items(), key=lambda x: x[1])]
+        logger.info(f"Conditioned-topics-only filtering. New thetas shape: ({len(dist)},{len(dist[0])})")
     best_topics = np.argmax(dist, axis=1)
     gen_data["class_pred"] = ["|".join(topics[i]) for i in best_topics]
     lab, pred = gen_data["class_label"], gen_data["class_pred"]
@@ -114,6 +123,12 @@ if __name__ == "__main__":
         default="it",
         type=str,
         help="Language used by spaCy preprocessing. Default: %(default)s."
+    )
+    parser.add_argument(
+        "--do_cond_topics_only",
+        action="store_true",
+        help="If set to true, the highest scoring topic is selected between those present in the dataset and not"
+        "instead of using the actual best topic from the topic model whole set."
     )
     args = parser.parse_args()
     if args.model_dir is None:
