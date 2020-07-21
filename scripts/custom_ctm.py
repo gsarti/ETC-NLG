@@ -70,13 +70,26 @@ def embeddings_from_file(unpreproc_path, embed_model_name, language):
         return np.array(model.encode(train_text))
 
 
+def embeddings_from_list(texts, embed_model_name, language):
+    if language == "it":
+        we_model = CamemBERT(embed_model_name)
+    else:
+        we_model = RoBERTa(embed_model_name)
+    pooling = Pooling(we_model.get_word_embedding_dimension())
+    model = SentenceTransformer(modules=[we_model, pooling])
+    return np.array(model.encode(texts))
+
+
 # If the data parameter is specified, we want to use preproc_path vocab to generate bow representations
 # for new documents.
 def get_ctm_and_data(preproc_path, embeds_path, filter_empty_bow, model_dir, inference_type, data=None):
     handler = CustomTextHandler(preproc_path, data=data)
     handler.prepare() # create vocabulary and training data
-    with open(embeds_path, 'rb') as f:
-        training_embeds = pickle.load(f)
+    if data is None:
+        with open(embeds_path, 'rb') as f:
+            training_embeds = pickle.load(f)
+    else:
+        training_embeds = embeddings_from_list(data)
     logger.info(f"BOW-Embedding shape: {len(handler.bow), len(training_embeds)}")
     training_dataset = CustomCTMDataset(handler.bow, training_embeds, handler.idx2token, filter_empty_bow=filter_empty_bow)
     ctm = load_ctm(model_dir, inference_type)
