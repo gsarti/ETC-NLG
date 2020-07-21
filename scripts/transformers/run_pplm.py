@@ -770,7 +770,7 @@ def _get_class_labels(model, class_label):
 
     elif model=="EuroParlEng":
         if class_label=="contextual":
-             return ["congratulate|excellent|rapporteur|thank|congratulation"
+             return ["congratulate|excellent|rapporteur|thank|congratulation",
                      "state|member|national|small|large",
                      "aid|child|food|world|people",
                      "group|party|behalf|liberal|alliance",
@@ -886,7 +886,8 @@ if __name__ == "__main__":
 
         os.makedirs(os.path.dirname(args.savedir), exist_ok=True)
         df.to_csv(args.savedir+"/generated_text_samples="\
-                    +str(args.num_samples)+".csv", 
+                    +str(args.num_samples)+"_iters="+str(args.num_iterations)+\
+                    "_temp="+str(args.temperature)+"_gm="+str(args.gm_scale)+".csv", 
                   index=False, header=True)
 
 
