@@ -87,8 +87,34 @@ python scripts/label_unpreprocessed.py \
     --save_path data/topic_annotated_europarl_it_contextual.tsv \
     --inference_type contextual
 
+# Evaluate the topic coherence of generated texts with the same topic model
+# used for the original labeling
 python scripts/eval_conditioned_generation.py \
     --gen_text_path data/generated_text_labels=contextual_samples=3.csv
+
+python scripts/eval_conditioned_generation.py \
+    --gen_text_path data/generated_text_labels=combined_samples=3.csv \
+    --inference_type combined
+
+python scripts/eval_conditioned_generation.py \
+    --gen_text_path data/generated_text_labels_europarl_it=contextual_samples=3.csv \
+    --preproc_path data/preprocessed_europarl_it.txt \
+    --embeds_path models/preprocessed_europarl_it_umberto-commoncrawl-cased-v1 \
+    --model_dir models/ctm_europarl_it_75_100_contextual \
+    --inference_type contextual \
+    --valid_upos ADJ NOUN VERB PROPN \
+    --stopwords "" \
+    --language it
+
+python scripts/eval_conditioned_generation.py \
+    --gen_text_path data/generated_text_labels_europarl_en=contextual_samples=3.csv \
+    --preproc_path data/preprocessed_europarl_en.txt \
+    --embeds_path models/preprocessed_europarl_en_roberta-base \
+    --model_dir models/ctm_europarl_en_75_100_contextual \
+    --inference_type contextual \
+    --valid_upos ADJ NOUN VERB PROPN \
+    --stopwords "" \
+    --language en
 ```
 
 ## Plug and Play Models

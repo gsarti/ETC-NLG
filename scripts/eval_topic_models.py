@@ -17,8 +17,6 @@ from contextualized_topic_models.evaluation.measures import (
 
 sys.path.append(os.getcwd())
 
-from sentence_transformers import SentenceTransformer
-from scripts.sent_transformers import CamemBERT, RoBERTa, Pooling
 from scripts.custom_ctm import CustomCTM, CustomTextHandler, CustomCTMDataset
 
 PREPROC_TEXTS = 'data/preprocessed_svevo_texts.txt'

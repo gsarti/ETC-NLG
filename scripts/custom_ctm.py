@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 import pickle
 import numpy as np
@@ -7,6 +8,11 @@ import multiprocessing as mp
 from contextualized_topic_models.models.ctm import CTM
 from contextualized_topic_models.utils.data_preparation import TextHandler
 from contextualized_topic_models.datasets.dataset import CTMDataset
+
+sys.path.append(os.getcwd())
+
+from sentence_transformers import SentenceTransformer
+from scripts.sent_transformers import CamemBERT, RoBERTa, Pooling
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s  %(message)s", datefmt="%d-%m-%y %H:%M:%S", level=logging.INFO,
@@ -82,14 +88,15 @@ def embeddings_from_list(texts, embed_model_name, language):
 
 # If the data parameter is specified, we want to use preproc_path vocab to generate bow representations
 # for new documents.
-def get_ctm_and_data(preproc_path, embeds_path, filter_empty_bow, model_dir, inference_type, data=None):
+def get_ctm_and_data(preproc_path, embeds_path, filter_empty_bow, model_dir, inference_type, data=None,
+                     embed_model_name=None, language=None):
     handler = CustomTextHandler(preproc_path, data=data)
     handler.prepare() # create vocabulary and training data
     if data is None:
         with open(embeds_path, 'rb') as f:
             training_embeds = pickle.load(f)
     else:
-        training_embeds = embeddings_from_list(data)
+        training_embeds = embeddings_from_list(data, embed_model_name, language)
     logger.info(f"BOW-Embedding shape: {len(handler.bow), len(training_embeds)}")
     training_dataset = CustomCTMDataset(handler.bow, training_embeds, handler.idx2token, filter_empty_bow=filter_empty_bow)
     ctm = load_ctm(model_dir, inference_type)

@@ -9,8 +9,6 @@ import pandas as pd
 
 sys.path.append(os.getcwd())
 
-from sentence_transformers import SentenceTransformer
-from scripts.sent_transformers import CamemBERT, RoBERTa, Pooling
 from scripts.custom_ctm import get_ctm_and_data
 
 PREPROC_TEXTS = 'data/preprocessed_svevo_texts.txt'

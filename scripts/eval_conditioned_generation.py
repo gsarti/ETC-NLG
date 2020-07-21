@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 PREPROC_TEXTS = 'data/preprocessed_svevo_texts.txt'
 MODEL_DIR_CONTEXTUAL = "models/ctm_svevo_6_100_contextual"
 MODEL_DIR_COMBINED = "models/ctm_svevo_6_100_combined"
+UMBERTO_NAME = "Musixmatch/umberto-commoncrawl-cased-v1"
+ROBERTA_NAME = "roberta-base"
 EMBEDS_PATH = "models/preprocessed_svevo_texts_umberto-commoncrawl-cased-v1"
 GEN_TEXT_PATH = "tests/Svevo/fine_tuned_LM_blockSize=128_ep=2/discriminator_ep=10_contextual_1500/generated_text_labels=contextual_samples=3.csv"
 SVEVO_STOPWORDS = [
@@ -37,7 +39,8 @@ def main(args):
     gen_data = pd.read_csv(args.gen_text_path)
     args.nlp = spacy.load(args.language)
     preproc_texts = [" ".join(x) for x in preprocess_texts(args, gen_data['perturbed_gen_text'])]
-    ctm, data = get_ctm_and_data(args.preproc_path, args.embeds_path, False, args.model_dir, args.inference_type, data=preproc_texts)
+    ctm, data = get_ctm_and_data(args.preproc_path, args.embeds_path, False, args.model_dir, args.inference_type, data=preproc_texts,
+        embed_model_name=args.embed_model_name, language=args.language)
     dist = ctm.get_thetas(data)
     logger.info(f"Thetas shape: ({len(dist)},{len(dist[0])})")
     topics = ctm.get_topic_lists(5)
@@ -46,7 +49,9 @@ def main(args):
     lab, pred = gen_data["class_label"], gen_data["class_pred"]
     cm_labs = list(set(lab) | set(pred))
     logger.info(f"Confusion matrix: {confusion_matrix(lab, pred, labels=cm_labs)}")
-    gen_data.to_csv(f'{args.gen_text_path.split(".")[0]}_predicted.csv')
+    fname = f'{args.gen_text_path.split(".")[0]}_predicted.csv'
+    gen_data.to_csv(fname)
+    logger.info(f"Saved predicted results to {fname}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -98,6 +103,13 @@ if __name__ == "__main__":
         help="Additional stopwords to be used during preprocessing. Default: %(default)s.",
     )
     parser.add_argument(
+        "--embed_model_name",
+        default=None,
+        type=str,
+        help="The embedding model name. Must use CamemBERT architecture for italian,"
+        "RoBERTa architecture otherwise. Default: %(default)s.",
+    )
+    parser.add_argument(
         "--language",
         default="it",
         type=str,
@@ -106,5 +118,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.model_dir is None:
         args.model_dir = MODEL_DIR_CONTEXTUAL if args.inference_type == "contextual" else MODEL_DIR_COMBINED
+    if args.embed_model_name is None:
+        args.embed_model_name = UMBERTO_NAME if args.language == "it" else ROBERTA_NAME 
     logger.info(f"Script args: f{args}")
     main(args)
