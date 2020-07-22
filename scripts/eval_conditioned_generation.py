@@ -47,10 +47,11 @@ def main(args):
     if args.do_cond_topics_only:
         topic2idx = {}
         form_topics = ["|".join(top) for top in topics]
-        for topic in pd.unique(gen_data['class_preds']):
+        for topic in gen_data['class_label'].unique():
             topic2idx[topic] = form_topics.index(topic)
-        dist = dist[:,list(topic2idx.values())]
-        # Reweire topics wrt new indexing (naturally in growing order)
+        indices = sorted(list(topic2idx.values()))
+        dist = np.take(dist, indices, axis=1)
+        # Rewrite topics wrt new indexing (naturally in growing order)
         topics = [e[0].split("|") for e in sorted(topic2idx.items(), key=lambda x: x[1])]
         logger.info(f"Conditioned-topics-only filtering. New thetas shape: ({len(dist)},{len(dist[0])})")
     best_topics = np.argmax(dist, axis=1)

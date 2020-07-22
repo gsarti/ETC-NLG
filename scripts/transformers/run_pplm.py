@@ -581,6 +581,7 @@ def set_generic_model_params(discrim_weights, discrim_meta):
 
 def run_pplm_example(
     model,
+    labels,
     pretrained_model="gpt2-medium",
     cond_text="",
     uncond=False,
@@ -770,7 +771,7 @@ def _get_class_labels(model, class_label):
 
     elif model=="EuroParlEng":
         if class_label=="contextual":
-             return ["congratulate|excellent|rapporteur|thank|congratulation"
+             return ["congratulate|excellent|rapporteur|thank|congratulation",
                      "state|member|national|small|large",
                      "aid|child|food|world|people",
                      "group|party|behalf|liberal|alliance",
@@ -829,7 +830,7 @@ if __name__ == "__main__":
         "--discrim_meta", type=str, default=None, help="Meta information for the generic discriminator",
     )
     parser.add_argument(
-        "--class_label", type=str, help="Class label used for the discriminator",
+        "--labels", type=str, help="Type of class labels used for the discriminator",
     )
     parser.add_argument("--length", type=int, default=100)
     parser.add_argument("--stepsize", type=float, default=0.02)
@@ -861,7 +862,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str)
     args = parser.parse_args()
 
-    class_label_list = _get_class_labels(args.model, args.class_label)
+    class_labels_list = _get_class_labels(args.model, args.labels)
     # print("\nClass labels:", class_label_list)
 
     if args.uncond:
@@ -872,7 +873,7 @@ if __name__ == "__main__":
 
         rows_count=0
 
-        for class_label in class_label_list:
+        for class_label in class_labels_list:
         
             args.class_label=class_label
             generated_texts = run_pplm_example(**vars(args)) 
@@ -885,15 +886,13 @@ if __name__ == "__main__":
                 rows_count+=1
 
         os.makedirs(os.path.dirname(args.savedir), exist_ok=True)
-        df.to_csv(args.savedir+"/generated_text_samples="\
-                    +str(args.num_samples)+".csv", 
-                  index=False, header=True)
+        filename="generated_"+str(args.model)+"_"+str(args.labels)+"_samp="+\
+                    str(args.num_samples)+"_iters="+str(args.num_iterations)+\
+                    "_temp="+str(args.temperature)+"_gm="+str(args.gm_scale)+".csv"
+        df.to_csv(args.savedir+"/"+filename, index=False, header=True)
 
 
     else:
-
-        filename="/generated_text_labels="+str(args.class_label)\
-        +"_samples="+str(args.num_samples)+".csv"
 
         cond_text_list=list(map(str, args.cond_text.strip('()').split(',')))
         # class_label_list=list(map(str, args.class_label.strip('()').split(',')))
@@ -901,7 +900,7 @@ if __name__ == "__main__":
         df = pandas.DataFrame(columns=["cond_text", "perturbed_gen_text", "class_label"])
 
         rows_count=0
-        for class_label in class_label_list:
+        for class_label in class_labels_list:
 
             for cond_text in cond_text_list:
 
@@ -919,6 +918,7 @@ if __name__ == "__main__":
 
 
         os.makedirs(os.path.dirname(args.savedir), exist_ok=True)
-        df.to_csv(args.savedir+filename, index=False, header=True)
-
-
+        filename="generated_"+str(args.model)+"_"+str(args.labels)+"_samp="+\
+                    str(args.num_samples)+"_iters="+str(args.num_iterations)+\
+                    "_temp="+str(args.temperature)+"_gm="+str(args.gm_scale)+".csv"
+        df.to_csv(args.savedir+"/"+filename, index=False, header=True)
