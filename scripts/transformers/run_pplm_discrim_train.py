@@ -21,6 +21,7 @@ import json
 import math
 import time
 
+import pandas as pd
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -166,10 +167,16 @@ def train_epoch(data_loader, discriminator, optimizer, epoch=0, log_interval=10,
             )
 
 
-def evaluate_performance(data_loader, discriminator, device="cpu"):
+def evaluate_performance(idx2class, data_loader, discriminator, device="cpu"):
     discriminator.eval()
     test_loss = 0
     correct = 0
+
+    true_class = []
+    predicted_class = []
+    softmax = []
+
+    row_count = 0
     with torch.no_grad():
         for input_t, target_t in data_loader:
             input_t, target_t = input_t.to(device), target_t.to(device)
@@ -180,6 +187,19 @@ def evaluate_performance(data_loader, discriminator, device="cpu"):
             pred_t = output_t.argmax(dim=1, keepdim=True)
             correct += pred_t.eq(target_t.view_as(pred_t)).sum().item()
 
+            [true_class.append(idx2class[idx]) for idx in target_t]
+            [predicted_class.append(idx2class[idx]) for idx in pred_t]
+            softmax.append(output_t.exp())
+
+    softmax = torch.cat(softmax, 0)
+    df = pd.DataFrame({"true_class":true_class, "predicted_class":predicted_class})
+
+    for class_idx, class_label in enumerate(idx2class):
+        df[class_label] = softmax[:,class_idx].cpu().detach().tolist()
+
+    for class_label in idx2class:
+        print(f"\n{class_label}\nmean={df[class_label].mean(0).round(3)}\t\tvar={df[class_label].var(0).round(3)}")
+
     test_loss /= len(data_loader.dataset)
 
     print(
@@ -188,6 +208,8 @@ def evaluate_performance(data_loader, discriminator, device="cpu"):
             test_loss, correct, len(data_loader.dataset), 100.0 * correct / len(data_loader.dataset)
         )
     )
+
+    return df
 
 
 def predict(input_sentence, model, classes, cached=False, device="cpu"):
@@ -202,6 +224,7 @@ def predict(input_sentence, model, classes, cached=False, device="cpu"):
         "Predictions:",
         ", ".join("{}: {:.4f}".format(c, math.exp(log_prob)) for c, log_prob in zip(classes, log_probs)),
     )
+
 
 
 def get_cached_data_loader(dataset, batch_size, discriminator, shuffle=False, device="cpu"):
@@ -480,7 +503,8 @@ def train_discriminator(
             log_interval=log_interval,
             device=device,
         )
-        evaluate_performance(data_loader=test_loader, discriminator=discriminator, device=device)
+        df = evaluate_performance(idx2class, data_loader=test_loader, discriminator=discriminator, device=device)
+        df.to_csv(savedir+"softmax_values.csv", encoding='utf-8', header=True, index=False, sep='\t')
 
         end = time.time()
         print("Epoch took: {:.3f}s".format(end - start))
