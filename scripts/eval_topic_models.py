@@ -8,6 +8,7 @@ import numpy as np
 from shutil import rmtree
 from prettytable import PrettyTable
 from tqdm import tqdm
+from custom_ctm import embeddings_from_file
 
 from contextualized_topic_models.evaluation.measures import (
     TopicDiversity,

@@ -21,16 +21,17 @@ def _split_with_punctuation(string, max_sentence_length, return_all_splits, sep=
     if max_sentence_length < 8:
             raise ValueError("limit is too small")
 
-    split_string = []
-    for sentence in split_keep(string, "."):
-        if sentence:
-            for subsentence in split_keep(sentence,","):
-                if subsentence:
-                    split_string.append(subsentence)
-                else:
-                    split_string.append(sentence)
-        else:
-            split_string = string.split()
+    if split_keep(string, "."):
+        split_string = []
+        for sentence in split_keep(string, "."):
+            if sentence:
+                for subsentence in split_keep(sentence,","):
+                    if subsentence:
+                        split_string.append(subsentence)
+                    else:
+                        split_string.append(sentence)
+    else:
+        split_string = string.split()
 
     res = []
     part = split_string[0]
@@ -138,6 +139,10 @@ def _build_labeled_df(df, model, labels):
 
     labeled_df = pd.DataFrame(labeled_text, columns=["label","text"])
 
+    # remove rows with empty strings
+    # labeled_df['text'].replace('', np.nan, inplace=True)
+    # labeled_df.dropna(subset=['text'], inplace=True)
+
     # select top k labels counts
     labels_counts = labeled_df["label"].value_counts().nlargest(10)
     top_labels = list(labels_counts.index)
@@ -179,7 +184,7 @@ def load_data(model, max_sentence_length, labels):
 
         elif labels == "contextual" or labels == "combined":
 
-            df = pandas.read_csv(DATA+"topic_annotated_svevo_"+labels+".tsv", sep="\t")
+            df = pandas.read_csv(DATA+"topic_annotated_svevo_"+labels+"_6.tsv", sep="\t")
 
     elif model=="EuroParlIta":
 
@@ -193,7 +198,7 @@ def load_data(model, max_sentence_length, labels):
 
         elif labels == "contextual" or labels == "combined":
 
-            filename = "topic_annotated_europarl_it_"+labels+".tsv"
+            filename = "topic_annotated_europarl_it_"+labels+"_10.tsv"
             df = pandas.read_csv(DATA+filename, sep="\t")
             df = df[df['unpreproc_text'].notna()]
 
@@ -209,7 +214,7 @@ def load_data(model, max_sentence_length, labels):
 
         elif labels == "contextual" or labels == "combined":
 
-            filename = "topic_annotated_europarl_en_"+labels+".tsv"
+            filename = "topic_annotated_europarl_en_"+labels+"_10.tsv"
             df = pandas.read_csv(DATA+filename, sep="\t")
             df = df[df['unpreproc_text'].notna()]
 

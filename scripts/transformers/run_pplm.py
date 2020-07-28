@@ -580,6 +580,7 @@ def set_generic_model_params(discrim_weights, discrim_meta):
     # return discr_params
 
 def run_pplm_example(
+    dataset,
     model,
     labels,
     pretrained_model="gpt2-medium",
@@ -729,66 +730,18 @@ def run_pplm_example(
 
     return pert_texts
 
-def _get_class_labels(model, class_label):
 
-    if model=="Svevo":
+def _get_class_labels(dataset_fp):
 
-        if class_label=="gold":
-            return ["FAMIGLIA","LIVIA","VIAGGI","SALUTE", "LETTERATURA","LAVORO"]
+    if dataset_fp is None:
+        raise ValueError("When generic dataset is selected, " "dataset_fp needs to be specified aswell.")
 
-        elif class_label=="contextual":
-            return ["decembre|tribel|raffreddore|debole|capanna",
-                    "notte|mattina|piccolo|sera|olga",
-                    "notte|piccolo|mattina|olga|sera",
-                    "raffreddore|fatturare|anonimo|earl|scell",
-                    "scell|halperson|roncegno|finito|scala",
-                    "senilità|devotissimo|joyce|amicare|carissimo"]
-        
-        elif class_label=="combined":
-            return ["cartone|capacità|grossissima|pazzo|schopenhauer",
-                      "cartone|capacità|grossissima|saggiare|pazzo",
-                      "fabbricare|domenica|marcare|macchina|caldo",
-                      "murare|gilda|dimenticato|sabato|arco",
-                      "senilità|amicare|devotissimo|editore|parigi",
-                      "titina|vero|olga|bisognare|viaggiare"]
-
-    elif model=="EuroParlIta":
-        if class_label=="contextual":
-            return ["produrre|cioccolato|produttore|consumatore|qualità",
-                    "nome|affare|ordine|presentare|onorevole",         
-                    "acqua|mare|pescare|rifiuto|inquinamento",
-                    "nn|accogliere|emendamento|lineare|motivare",
-                    "sperare|vertice|occasione|settimana|lisbona",
-                    "svolgere|chiuso|giovedì|indesiderato|intensivo",
-                    "ordine|venerdì|approvare|dichiarare|congiunto",
-                    "commissariare|carico|signora|patten|parola",
-                    "umano|fondamentale|libertà|diritto|carta",
-                    "carta|fondamentale|rispettare|valore|principiare"]
-
-        # elif class_label=="combined":
-        #     return 
-
-
-    elif model=="EuroParlEng":
-        if class_label=="contextual":
-             return ["congratulate|excellent|rapporteur|thank|congratulation",
-                     "state|member|national|small|large",
-                     "aid|child|food|world|people",
-                     "group|party|behalf|liberal|alliance",
-                     "market|euro|company|investment|service",
-                     "racism|xenophobia|violence|minority|ethnic",
-                     "animal|product|chocolate|fat|butter",
-                     "waste|water|transport|environment|environmental",
-                     "peace|process|negotiation|agreement|israel",
-                     "cut|nielson|reply|speaker|fischler"]
-                     
-        # elif class_label=="combined":
-        #     return
-
-    else: 
-        raise NotImplementedError()
-
-
+    df = pandas.read_csv(dataset_fp, sep="\t")
+    labels_list=list(np.unique(df.iloc[:, 0]))
+   
+    print("\nunique labels:", labels_list)
+    return labels_list
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -860,9 +813,11 @@ if __name__ == "__main__":
     )
     parser.add_argument("--savedir", type=str)
     parser.add_argument("--model", type=str)
+    parser.add_argument("--dataset", type=str)
     args = parser.parse_args()
 
-    class_labels_list = _get_class_labels(args.model, args.labels)
+    class_labels_list = _get_class_labels(args.dataset)
+    # class_labels_list = _get_class_labels_old(args.model, args.labels)
     # print("\nClass labels:", class_label_list)
 
     if args.uncond:
